@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Copy, LoaderCircle } from "lucide-react";
+import { Upload, Copy, Loader2, FileUp } from "lucide-react";
 import { toast } from "sonner";
 export default function Home() {
   const [result, setResult] = useState<any>(null);
@@ -62,7 +62,7 @@ export default function Home() {
   return (
     <main className="bg-[#F1F0EC] ">
       <div className="flex items-center justify-center h-screen">
-        <div className=" max-w-4xl mx-auto p-10 font-[Inter] ">
+        <div className="max-w-2xl mx-auto p-10 font-[Inter] ">
           <Card>
             <CardHeader>
               {/*<CardTitle>Movement Stock</CardTitle>*/}
@@ -81,10 +81,10 @@ export default function Home() {
                   className="absolute inset-0 cursor-pointer opacity-0"
                 />
 
-                <div className="group rounded-xl border border-dashed border-zinc-400 bg-zinc-50  p-8 transition-all duration-300  ">
+                <div className="group  rounded-xl border border-dashed border-zinc-400 bg-zinc-50  p-8 transition-all duration-300  ">
                   <div className="flex flex-col items-center gap-3">
                     <div className="rounded-full bg-white p-4 border ">
-                      <Upload className="size-6 text-zinc-700" />
+                      <FileUp className="size-6" />
                     </div>
 
                     <div className="text-center">
@@ -101,14 +101,17 @@ export default function Home() {
 
               <p className="text-sm text-muted-foreground">
                 Produk tanpa SKU seperti &quot;Made In Sunset&quot; harus tetap
-                input manual
+                input manual.
               </p>
               <div className="flex gap-2">
                 <Button
                   size="lg"
                   onClick={handleUpload}
                   disabled={!file || loading}
+                  className="gap-2"
                 >
+                  {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+
                   {loading ? "Memproses..." : "Proses PDF"}
                 </Button>
 
