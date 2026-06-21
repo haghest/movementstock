@@ -65,10 +65,10 @@ export default function Home() {
         <div className="max-w-2xl mx-auto p-10 font-[Inter] ">
           <Card>
             <CardHeader>
-              {/*<CardTitle>Movement Stock</CardTitle>*/}
-              <h1 className="text-lg font-semibold">Movement Stock</h1>
+              <h1 className="text-xl font-semibold">Movement Stock</h1>
               <p className="text-sm text-muted-foreground">
-                Merubah PDF Daily Sales Odoo menjadi Format Sheets.
+                Merubah PDF Daily Sales Odoo menjadi format sheets movement
+                stock.
               </p>
             </CardHeader>
 
@@ -91,9 +91,9 @@ export default function Home() {
                       <p className="font-medium">
                         {file ? file.name : "Upload .PDF Daily Sales"}
                       </p>
-                      {/*<p className="mt-1 text-sm text-muted-foreground">
-                    Click or drag & drop PDF file
-                  </p>*/}
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Click or drag & drop PDF file
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -126,7 +126,6 @@ export default function Home() {
                         toast.success(
                           "Data berhasil disalin, silahkan paste ke sheet IMPORT",
                           {
-                            // description: "Silakan paste ke sheet IMPORT.",
                             position: "top-center",
                           },
                         );
@@ -149,25 +148,6 @@ export default function Home() {
             </CardContent>
           </Card>
           <div className="grid gap-2 md:grid-cols-2 mt-2">
-            {/*<Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">Formula IN</CardTitle>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => navigator.clipboard.writeText(formulas.in)}
-            >
-              Copy
-            </Button>
-          </CardHeader>
-
-          <CardContent>
-            <pre className="text-xs whitespace-pre-wrap break-all">
-              {formulas.in}
-            </pre>
-          </CardContent>
-        </Card>*/}
-
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-base">Rumus REFUND</CardTitle>
