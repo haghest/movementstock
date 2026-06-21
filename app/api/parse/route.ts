@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { extractText } from "unpdf";
 import { parseDailySales } from "@/lib/parser";
-import { generateColumn } from "@/lib/generateColumn";
 import { generateImport } from "@/lib/generateImport";
 
 export async function POST(req: Request) {

@@ -46,7 +46,7 @@ export default function Home() {
   XLOOKUP(
   REGEXEXTRACT($B6,"\\[([^\\]]+)\\]"),
   IMPORT!$A:$A,
-  IMPORT!$E:$E,
+  IMPORT!$C:$C,
   ""
   ),"")`,
 
@@ -54,7 +54,7 @@ export default function Home() {
   XLOOKUP(
   REGEXEXTRACT($B6,"\\[([^\\]]+)\\]"),
   IMPORT!$A:$A,
-  IMPORT!$F:$F,
+  IMPORT!$D:$D,
   ""
   ),"")`,
   };
