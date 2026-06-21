@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload } from "lucide-react";
+import { Upload, Copy, LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
 export default function Home() {
   const [result, setResult] = useState<any>(null);
@@ -81,15 +81,15 @@ export default function Home() {
                   className="absolute inset-0 cursor-pointer opacity-0"
                 />
 
-                <div className="group rounded-xl border-2 border-dashed border-slate-300 bg-gradient-to-br from-slate-50 to-slate-100 p-10 transition-all duration-300 hover:border-slate-500 hover:shadow-lg ">
+                <div className="group rounded-xl border border-dashed border-zinc-400 bg-zinc-50  p-8 transition-all duration-300  ">
                   <div className="flex flex-col items-center gap-3">
                     <div className="rounded-full bg-white p-4 border ">
-                      <Upload className="h-8 w-8 text-zinc-700" />
+                      <Upload className="size-6 text-zinc-700" />
                     </div>
 
                     <div className="text-center">
                       <p className="font-medium">
-                        {file ? file.name : "Upload PDF Daily Sales"}
+                        {file ? file.name : "Upload .PDF Daily Sales"}
                       </p>
                       {/*<p className="mt-1 text-sm text-muted-foreground">
                     Click or drag & drop PDF file
@@ -99,6 +99,10 @@ export default function Home() {
                 </div>
               </div>
 
+              <p className="text-sm text-muted-foreground">
+                Produk tanpa SKU seperti &quot;Made In Sunset&quot; harus tetap
+                input manual
+              </p>
               <div className="flex gap-2">
                 <Button
                   size="lg"
@@ -130,6 +134,7 @@ export default function Home() {
                       }
                     }}
                   >
+                    <Copy className="size-4 mr-1" />
                     Salin Data
                   </Button>
                 )}
@@ -164,6 +169,7 @@ export default function Home() {
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-base">Rumus REFUND</CardTitle>
                 <Button
+                  variant="secondary"
                   onClick={async () => {
                     await navigator.clipboard.writeText(formulas.refund);
 
@@ -172,12 +178,13 @@ export default function Home() {
                     });
                   }}
                 >
+                  <Copy className="size-4 mr-1" />
                   Salin
                 </Button>
               </CardHeader>
 
               <CardContent>
-                <pre className="text-xs whitespace-pre-wrap break-all">
+                <pre className="text-xs whitespace-pre-wrap border rounded-sm p-3 border-dashed break-all ">
                   {formulas.refund}
                 </pre>
               </CardContent>
@@ -187,6 +194,7 @@ export default function Home() {
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-base">Rumus OUT</CardTitle>
                 <Button
+                  variant="secondary"
                   onClick={async () => {
                     await navigator.clipboard.writeText(formulas.out);
 
@@ -195,12 +203,13 @@ export default function Home() {
                     });
                   }}
                 >
+                  <Copy className="size-4 mr-1" />
                   Salin
                 </Button>
               </CardHeader>
 
               <CardContent>
-                <pre className="text-xs whitespace-pre-wrap break-all">
+                <pre className="text-xs whitespace-pre-wrap border rounded-sm p-3 border-dashed break-all">
                   {formulas.out}
                 </pre>
               </CardContent>
