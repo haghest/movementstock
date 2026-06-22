@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { extractText } from "unpdf";
 import { parseDailySales } from "@/lib/parser";
 import { generateImport } from "@/lib/generateImport";
-
+import { calculateSummary } from "@/lib/summary";
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
@@ -21,7 +21,19 @@ export async function POST(req: Request) {
     const text = Array.isArray(result.text)
       ? result.text.join("\n")
       : String(result.text ?? "");
+    // debug micropouch
+    console.log("HAS MICRO POUCHES:", text.includes("MICRO POUCHES"));
+    const microLines = text
+      .split("\n")
+      .filter((line) => line.includes("MICRO"));
+
+    console.log("MICRO LINES:");
+    console.log(microLines);
+
     const parsed = parseDailySales(text);
+    console.log("UNKNOWN ITEMS:");
+    console.log(parsed.unknown);
+    const summary = calculateSummary(parsed);
     const importData = generateImport(parsed.out, parsed.refund);
     // const outColumn = generateColumn(parsed.out);
     // const refundColumn = generateColumn(parsed.refund);
@@ -34,10 +46,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       parsed,
-      // outColumn,
-      // refundColumn,
-      // outImport,
-      // refundImport,
+      summary,
       importData,
     });
   } catch (error) {

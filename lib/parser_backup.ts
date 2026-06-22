@@ -1,7 +1,10 @@
 function extractItems(section: string) {
   const results: Record<string, number> = {};
 
-  const regex = /\[([A-Z0-9]+)\][\s\S]*?\n(\d+(?:\.\d+)?)\nUnit\(s\)/g;
+  // const regex =
+  //   /\[([A-Z0-9]+)\][\s\S]*?(\d+(?:\.\d+)?)\s*\nUnit\(s\)/g;
+  //
+  const regex = /\[([^\]]+)\][\s\S]*?(\d+(?:\.\d+)?)\s*\nUnit\(s\)/g;
 
   let match;
 
@@ -17,39 +20,17 @@ function extractItems(section: string) {
 
 export function parseDailySales(text: string) {
   const salesStart = text.indexOf("Sales");
-  const refundStart = text.indexOf("Refunds");
-
-  console.log("========== DEBUG ==========");
-  console.log("salesStart =", salesStart);
-  console.log("refundStart =", refundStart);
-
-  if (refundStart !== -1) {
-    console.log("=== REFUND PREVIEW ===");
-    console.log(
-      text.substring(refundStart, Math.min(refundStart + 1000, text.length)),
-    );
-  } else {
-    console.log("REFUNDS NOT FOUND");
-  }
+  const refundsStart = text.indexOf("Refunds");
 
   const salesSection =
-    refundStart > -1
-      ? text.slice(salesStart, refundStart)
-      : text.slice(salesStart);
+    salesStart >= 0 && refundsStart >= 0
+      ? text.slice(salesStart, refundsStart)
+      : text;
 
-  const refundSection = refundStart > -1 ? text.slice(refundStart) : "";
+  const refundSection = refundsStart >= 0 ? text.slice(refundsStart) : "";
 
   const out = extractItems(salesSection);
   const refund = extractItems(refundSection);
-
-  console.log("OUT SKU COUNT =", Object.keys(out).length);
-  console.log("REFUND SKU COUNT =", Object.keys(refund).length);
-
-  console.log("FIRST 10 OUT:");
-  console.log(Object.entries(out).slice(0, 10));
-
-  console.log("REFUND DATA:");
-  console.log(refund);
 
   return {
     out,

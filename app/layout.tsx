@@ -3,8 +3,9 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/theme-provider";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,17 +29,25 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={cn(
         "h-full",
         "antialiased",
         geistSans.variable,
         geistMono.variable,
         "font-sans",
-        inter.variable,
+        geist.variable,
       )}
     >
-      <body className="min-h-full flex flex-col font-[Inter]">
-        {children} <Toaster />
+      <body className=" font-[Inter] bg-[#F1F0EC] dark:bg-[#0a0a0a]">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children} <Toaster toastOptions={{ className: "font-[Inter]" }} />
+        </ThemeProvider>
       </body>
     </html>
   );
