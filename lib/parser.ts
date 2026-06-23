@@ -1,3 +1,8 @@
+type UnknownItem = {
+  name: string;
+  qty: number;
+};
+
 function extractItems(section: string) {
   const results: Record<string, number> = {};
 
@@ -6,7 +11,7 @@ function extractItems(section: string) {
   let match;
 
   while ((match = regex.exec(section)) !== null) {
-    const sku = match[1];
+    const sku = match[1].trim();
     const qty = Number(match[2]);
 
     results[sku] = (results[sku] || 0) + qty;
@@ -15,75 +20,70 @@ function extractItems(section: string) {
   return results;
 }
 
-// function extractKnownNoSkuItems(text: string): UnknownItem[] {
-//   const results: UnknownItem[] = [];
-
-//   const knownItems = [
-//     "Mini Backpack XS - Made In Sunset",
-//     "Mini Backpack - Made in Sunset",
-//     "Product Reparation",
-//     "MICRO POUCHES (Micro, Unique",
-//     "CMD Custom Embroidery",
-//     "Sling Bag - Made in Sunset",
-//   ];
-
-//   for (const itemName of knownItems) {
-//     const escaped = itemName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-//     const regex = new RegExp(
-//       `${escaped}\\s+(\\d+(?:\\.\\d+)?)\\s+Unit\\(s\\)`,
-//       "gi",
-//     );
-
-//     let match;
-
-//     while ((match = regex.exec(text)) !== null) {
-//       results.push({
-//         name: itemName,
-//         qty: Number(match[1]),
-//       });
-//     }
-//   }
-
-//   return results;
-// }
-
-function extractKnownNoSkuItems(text: string): UnknownItem[] {
+function extractNonSkuItems(text: string): UnknownItem[] {
   const results: UnknownItem[] = [];
 
-  const knownItems = [
-    "Mini Backpack XS - Made In Sunset",
-    "Mini Backpack - Made in Sunset",
+  /**
+   * Tambahkan produk tanpa SKU di sini
+   */
+  const patterns = [
     "Product Reparation",
-    "MICRO POUCHES (Micro, Unique",
     "CMD Custom Embroidery",
+    "Mini Backpack - Made in Sunset",
     "Sling Bag - Made in Sunset",
+    "Mini Backpack XS - Made In Sunset",
+    "MICRO POUCHES (Micro, Unique",
+    "IZIPIZI",
+    "MUNDAKA ISIS",
+    "MUNDAKA AKILA",
+    "MUNDAKA KENSINGTON",
+    "Petromax",
+    "Keychain Kuksa Standard - One Shot ",
+    "Neem Style Twilly",
   ];
 
-  const lines = text.split("\n");
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
 
   for (const line of lines) {
-    for (const itemName of knownItems) {
-      if (line.includes(itemName)) {
-        const qtyMatch = line.match(/(\d+(?:\.\d+)?)$/);
+    const matchedPattern = patterns.find((pattern) => line.includes(pattern));
 
-        if (qtyMatch) {
-          results.push({
-            name: itemName,
-            qty: Number(qtyMatch[1]),
-          });
-        }
-      }
+    if (!matchedPattern) continue;
+
+    const qtyMatch = line.match(/(\d+(?:\.\d+)?)$/);
+
+    if (!qtyMatch) continue;
+
+    const qty = Number(qtyMatch[1]);
+
+    let name = line.replace(qtyMatch[1], "").trim();
+
+    /**
+     * Alias tampilan supaya lebih rapi
+     */
+    if (name.includes("MICRO POUCHES")) {
+      name = "MICRO POUCHES (Micro, Unique 🌈)";
     }
+
+    results.push({
+      name,
+      qty,
+    });
   }
 
-  return results;
-}
+  const merged = new Map<string, number>();
 
-type UnknownItem = {
-  name: string;
-  qty: number;
-};
+  for (const item of results) {
+    merged.set(item.name, (merged.get(item.name) || 0) + item.qty);
+  }
+
+  return Array.from(merged.entries()).map(([name, qty]) => ({
+    name,
+    qty,
+  }));
+}
 
 export function parseDailySales(text: string) {
   const salesStart = text.indexOf("Sales");
@@ -98,10 +98,11 @@ export function parseDailySales(text: string) {
 
   const out = extractItems(salesSection);
   const refund = extractItems(refundSection);
+  const unknown = extractNonSkuItems(text);
 
   return {
     out,
     refund,
-    unknown: extractKnownNoSkuItems(text),
+    unknown,
   };
 }

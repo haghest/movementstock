@@ -35,10 +35,7 @@ export async function POST(req: Request) {
     console.log(parsed.unknown);
     const summary = calculateSummary(parsed);
     const importData = generateImport(parsed.out, parsed.refund);
-    // const outColumn = generateColumn(parsed.out);
-    // const refundColumn = generateColumn(parsed.refund);
-    // const outImport = generateImport(parsed.out, true);
-    // const refundImport = generateImport(parsed.refund, false);
+
     console.log("========== RESULT ==========");
     console.log("OUT:", parsed.out);
     console.log("REFUND:", parsed.refund);

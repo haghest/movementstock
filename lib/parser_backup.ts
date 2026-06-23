@@ -1,9 +1,6 @@
 function extractItems(section: string) {
   const results: Record<string, number> = {};
 
-  // const regex =
-  //   /\[([A-Z0-9]+)\][\s\S]*?(\d+(?:\.\d+)?)\s*\nUnit\(s\)/g;
-  //
   const regex = /\[([^\]]+)\][\s\S]*?(\d+(?:\.\d+)?)\s*\nUnit\(s\)/g;
 
   let match;
@@ -17,6 +14,76 @@ function extractItems(section: string) {
 
   return results;
 }
+
+// function extractKnownNoSkuItems(text: string): UnknownItem[] {
+//   const results: UnknownItem[] = [];
+
+//   const knownItems = [
+//     "Mini Backpack XS - Made In Sunset",
+//     "Mini Backpack - Made in Sunset",
+//     "Product Reparation",
+//     "MICRO POUCHES (Micro, Unique",
+//     "CMD Custom Embroidery",
+//     "Sling Bag - Made in Sunset",
+//   ];
+
+//   for (const itemName of knownItems) {
+//     const escaped = itemName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+//     const regex = new RegExp(
+//       `${escaped}\\s+(\\d+(?:\\.\\d+)?)\\s+Unit\\(s\\)`,
+//       "gi",
+//     );
+
+//     let match;
+
+//     while ((match = regex.exec(text)) !== null) {
+//       results.push({
+//         name: itemName,
+//         qty: Number(match[1]),
+//       });
+//     }
+//   }
+
+//   return results;
+// }
+
+function extractKnownNoSkuItems(text: string): UnknownItem[] {
+  const results: UnknownItem[] = [];
+
+  const knownItems = [
+    "Mini Backpack XS - Made In Sunset",
+    "Mini Backpack - Made in Sunset",
+    "Product Reparation",
+    "MICRO POUCHES (Micro, Unique",
+    "CMD Custom Embroidery",
+    "Sling Bag - Made in Sunset",
+  ];
+
+  const lines = text.split("\n");
+
+  for (const line of lines) {
+    for (const itemName of knownItems) {
+      if (line.includes(itemName)) {
+        const qtyMatch = line.match(/(\d+(?:\.\d+)?)$/);
+
+        if (qtyMatch) {
+          results.push({
+            name: itemName,
+            qty: Number(qtyMatch[1]),
+          });
+        }
+      }
+    }
+  }
+
+  return results;
+}
+
+type UnknownItem = {
+  name: string;
+  qty: number;
+};
 
 export function parseDailySales(text: string) {
   const salesStart = text.indexOf("Sales");
@@ -35,5 +102,6 @@ export function parseDailySales(text: string) {
   return {
     out,
     refund,
+    unknown: extractKnownNoSkuItems(text),
   };
 }
