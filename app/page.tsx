@@ -56,7 +56,8 @@ function shouldIncludeNameInFormula(name: string) {
   return (
     normalizedName.includes("made in sunset") ||
     normalizedName.includes("embroidery") ||
-    normalizedName.includes("product reparation")
+    normalizedName.includes("product reparation") ||
+    normalizedName.includes("keychain kuksa standard - one shot")
   );
 }
 
