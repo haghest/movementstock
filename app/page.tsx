@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
+
 import { Copy, Loader2, FileUp } from "lucide-react";
 import { toast } from "sonner";
 import { ModeToggle } from "@/components/toggle-theme";
@@ -74,10 +74,17 @@ function getFormulaNameItems(items: UnknownItem[]) {
   return Array.from(merged.entries()).map(([name, qty]) => ({ name, qty }));
 }
 
+function getItemsNotInFormula(items: UnknownItem[]) {
+  return items.filter((item) => !shouldIncludeNameInFormula(item.name));
+}
+
+function sumQty(items: UnknownItem[]) {
+  return items.reduce((sum, item) => sum + item.qty, 0);
+}
+
 export default function Home() {
   const [result, setResult] = useState<ParsedResult | null>(null);
   const [file, setFile] = useState<File | null>(null);
-  const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleUpload() {
@@ -95,7 +102,6 @@ export default function Home() {
 
     const data = await res.json();
 
-    setText(data.text);
     setResult(data);
 
     setLoading(false);
@@ -130,6 +136,15 @@ export default function Home() {
         result.summary.refundSkuCount + refundNameItems.length,
       )
     : null;
+  const unmatchedOutItems = result
+    ? getItemsNotInFormula(result.parsed.unknownOut)
+    : [];
+  const unmatchedRefundItems = result
+    ? getItemsNotInFormula(result.parsed.unknownRefund)
+    : [];
+  const unmatchedOutQty = sumQty(unmatchedOutItems);
+  const unmatchedRefundQty = sumQty(unmatchedRefundItems);
+  const unmatchedQty = unmatchedOutQty + unmatchedRefundQty;
 
   async function copyToClipboard(value: string, successMessage: string) {
     if (!value) {
@@ -223,10 +238,6 @@ export default function Home() {
                   </Button>
                 )}
               </div>
-
-              {text && (
-                <Textarea value={text} readOnly className="max-h-[200px]" />
-              )}
             </CardContent>
           </Card>
 
@@ -258,33 +269,28 @@ export default function Home() {
               <Separator className="" />
               <div className=" px-4">
                 <Badge variant="destructive" className="mb-3">
-                  Produk tanpa SKU perlu dicek
+                  Produk perlu input manual
                 </Badge>
                 <div className="font-semibold flex items-center gap-2 justify-between">
-                  <p>Produk terdeteksi tanpa SKU</p>
-                  <p>Total: {result.summary.unknownQty} PCS</p>
+                  <p>Produk yang tidak masuk rumus</p>
+                  <p>Total: {unmatchedQty} PCS</p>
                 </div>
 
                 <div className="mt-3 space-y-4">
                   <div>
                     <div className="flex justify-between text-sm font-semibold">
                       <p>Sales / OUT</p>
-                      <p>{result.summary.unknownOutQty} PCS</p>
+                      <p>{unmatchedOutQty} PCS</p>
                     </div>
-                    {result.parsed.unknownOut.length > 0 ? (
+                    {unmatchedOutItems.length > 0 ? (
                       <ul className="mt-2 space-y-1">
-                        {result.parsed.unknownOut.map((item, index) => (
+                        {unmatchedOutItems.map((item, index) => (
                           <li
                             key={index}
                             className="flex justify-between gap-3 border-b py-1 last:border-b-0"
                           >
                             <span>
                               {PRODUCT_ALIASES[item.name] ?? item.name}
-                              {shouldIncludeNameInFormula(item.name) && (
-                                <Badge variant="secondary" className="ml-2">
-                                  Masuk rumus
-                                </Badge>
-                              )}
                             </span>
                             <span className="font-semibold">
                               {item.qty} PCS
@@ -294,7 +300,7 @@ export default function Home() {
                       </ul>
                     ) : (
                       <p className="mt-1 text-sm text-muted-foreground">
-                        Tidak ada produk sales tanpa SKU.
+                        Semua produk sales tanpa SKU sudah masuk rumus.
                       </p>
                     )}
                   </div>
@@ -302,22 +308,17 @@ export default function Home() {
                   <div>
                     <div className="flex justify-between text-sm font-semibold">
                       <p>Refund</p>
-                      <p>{result.summary.unknownRefundQty} PCS</p>
+                      <p>{unmatchedRefundQty} PCS</p>
                     </div>
-                    {result.parsed.unknownRefund.length > 0 ? (
+                    {unmatchedRefundItems.length > 0 ? (
                       <ul className="mt-2 space-y-1">
-                        {result.parsed.unknownRefund.map((item, index) => (
+                        {unmatchedRefundItems.map((item, index) => (
                           <li
                             key={index}
                             className="flex justify-between gap-3 border-b py-1 last:border-b-0"
                           >
                             <span>
                               {PRODUCT_ALIASES[item.name] ?? item.name}
-                              {shouldIncludeNameInFormula(item.name) && (
-                                <Badge variant="secondary" className="ml-2">
-                                  Masuk rumus
-                                </Badge>
-                              )}
                             </span>
                             <span className="font-semibold">
                               {item.qty} PCS
@@ -327,7 +328,7 @@ export default function Home() {
                       </ul>
                     ) : (
                       <p className="mt-1 text-sm text-muted-foreground">
-                        Tidak ada produk refund tanpa SKU.
+                        Semua produk refund tanpa SKU sudah masuk rumus.
                       </p>
                     )}
                   </div>
