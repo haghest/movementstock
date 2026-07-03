@@ -1,7 +1,11 @@
+type UnknownItem = { name: string; qty: number };
+
 export function calculateSummary(parsed: {
   out: Record<string, number>;
   refund: Record<string, number>;
-  unknown: { name: string; qty: number }[];
+  unknown: UnknownItem[];
+  unknownOut?: UnknownItem[];
+  unknownRefund?: UnknownItem[];
 }) {
   const salesSkuCount = Object.keys(parsed.out).length;
 
@@ -11,7 +15,15 @@ export function calculateSummary(parsed: {
 
   const refundQty = Object.values(parsed.refund).reduce((a, b) => a + b, 0);
 
-  const unknownQty = parsed.unknown.reduce((sum, item) => sum + item.qty, 0);
+  const unknownOutQty = (parsed.unknownOut ?? []).reduce(
+    (sum, item) => sum + item.qty,
+    0,
+  );
+  const unknownRefundQty = (parsed.unknownRefund ?? []).reduce(
+    (sum, item) => sum + item.qty,
+    0,
+  );
+  const unknownQty = unknownOutQty + unknownRefundQty;
 
   return {
     salesSkuCount,
@@ -19,5 +31,7 @@ export function calculateSummary(parsed: {
     refundSkuCount,
     refundQty,
     unknownQty,
+    unknownOutQty,
+    unknownRefundQty,
   };
 }

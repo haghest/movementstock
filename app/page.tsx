@@ -4,13 +4,77 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Copy, Loader2, FileUp, TriangleAlert } from "lucide-react";
+import { Copy, Loader2, FileUp } from "lucide-react";
 import { toast } from "sonner";
 import { ModeToggle } from "@/components/toggle-theme";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import {
+  generateSkuArrayFormula,
+  getFormulaStats,
+} from "@/lib/generateFormula";
+
+type UnknownItem = { name: string; qty: number };
+
+type ParsedResult = {
+  parsed: {
+    out: Record<string, number>;
+    refund: Record<string, number>;
+    unknown: UnknownItem[];
+    unknownOut: UnknownItem[];
+    unknownRefund: UnknownItem[];
+  };
+  summary: {
+    salesSkuCount: number;
+    salesQty: number;
+    refundSkuCount: number;
+    refundQty: number;
+    unknownQty: number;
+    unknownOutQty: number;
+    unknownRefundQty: number;
+  };
+  importData: string;
+  text?: string;
+};
+
+const PRODUCT_ALIASES: Record<string, string> = {
+  "MICRO POUCHES (Micro, Unique": "MICRO POUCHES (Micro, Unique (🌈))",
+  "Mini Backpack XS - Made In Sunset": "Mini Backpack XS - Made In Sunset",
+  "Mini Backpack - Made in Sunset": "Mini Backpack - Made In Sunset",
+  "Product Reparation": "Product Reparation",
+  "CMD Custom Embroidery": "CMD Custom Embroidery",
+  "Sling Bag - Made in Sunset": "Sling Bag - Made In Sunset",
+};
+
+function getMovementStockProductName(name: string) {
+  return PRODUCT_ALIASES[name] ?? name;
+}
+
+function shouldIncludeNameInFormula(name: string) {
+  const normalizedName = name.toLowerCase();
+
+  return (
+    normalizedName.includes("made in sunset") ||
+    normalizedName.includes("embroidery") ||
+    normalizedName.includes("product reparation")
+  );
+}
+
+function getFormulaNameItems(items: UnknownItem[]) {
+  const merged = new Map<string, number>();
+
+  for (const item of items) {
+    if (!shouldIncludeNameInFormula(item.name)) continue;
+
+    const productName = getMovementStockProductName(item.name);
+    merged.set(productName, (merged.get(productName) ?? 0) + item.qty);
+  }
+
+  return Array.from(merged.entries()).map(([name, qty]) => ({ name, qty }));
+}
+
 export default function Home() {
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<ParsedResult | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -36,45 +100,56 @@ export default function Home() {
     setLoading(false);
   }
 
-  const formulas = {
-    in: `=IFERROR(
-  XLOOKUP(
-  REGEXEXTRACT($B6,"\\[([^\\]]+)\\]"),
-  IMPORT!$A:$A,
-  IMPORT!$D:$D,
-  ""
-  ),"")`,
+  const outNameItems = result
+    ? getFormulaNameItems(result.parsed.unknownOut)
+    : [];
+  const refundNameItems = result
+    ? getFormulaNameItems(result.parsed.unknownRefund)
+    : [];
+  const outFormula = result
+    ? generateSkuArrayFormula(result.parsed.out, {
+        negative: true,
+        nameItems: outNameItems,
+      })
+    : "";
+  const refundFormula = result
+    ? generateSkuArrayFormula(result.parsed.refund, {
+        nameItems: refundNameItems,
+      })
+    : "";
+  const outFormulaStats = result
+    ? getFormulaStats(
+        outFormula,
+        result.summary.salesSkuCount + outNameItems.length,
+      )
+    : null;
+  const refundFormulaStats = result
+    ? getFormulaStats(
+        refundFormula,
+        result.summary.refundSkuCount + refundNameItems.length,
+      )
+    : null;
 
-    refund: `=IFERROR(
-  XLOOKUP(
-  REGEXEXTRACT($B6,"\\[([^\\]]+)\\]"),
-  IMPORT!$A:$A,
-  IMPORT!$C:$C,
-  ""
-  ),"")`,
+  async function copyToClipboard(value: string, successMessage: string) {
+    if (!value) {
+      toast.error("Tidak ada data untuk disalin", {
+        position: "top-center",
+      });
+      return;
+    }
 
-    out: `=IFERROR(
-  XLOOKUP(
-  REGEXEXTRACT($B6,"\\[([^\\]]+)\\]"),
-  IMPORT!$A:$A,
-  IMPORT!$D:$D,
-  ""
-  ),"")`,
-  };
+    try {
+      await navigator.clipboard.writeText(value);
 
-  const PRODUCT_ALIASES: Record<string, string> = {
-    "MICRO POUCHES (Micro, Unique": "MICRO POUCHES (Micro, Unique (🌈))",
-
-    "Mini Backpack XS - Made In Sunset": "Mini Backpack XS - Made In Sunset",
-
-    "Mini Backpack - Made in Sunset": "Mini Backpack - Made In Sunset",
-
-    "Product Reparation": "Product Reparation",
-
-    "CMD Custom Embroidery": "CMD Custom Embroidery",
-
-    "Sling Bag - Made in Sunset": "Sling Bag - Made In Sunset",
-  };
+      toast.success(successMessage, {
+        position: "top-center",
+      });
+    } catch {
+      toast.error("Gagal menyalin data", {
+        position: "top-center",
+      });
+    }
+  }
 
   return (
     <main className="relative">
@@ -83,7 +158,7 @@ export default function Home() {
       </div>
 
       <div className="flex items-center justify-center min-h-screen">
-        <div className="max-w-2xl mx-auto p-10  gap-3">
+        <div className="min-w-2xl max-w-2xl mx-auto p-10  gap-3">
           <Card>
             <CardHeader>
               <h1 className="text-xl font-semibold">Movement Stock</h1>
@@ -135,31 +210,21 @@ export default function Home() {
                   <Button
                     size="lg"
                     variant="secondary"
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(result.importData);
-
-                        toast.success(
-                          "Data berhasil disalin, silahkan paste ke sheet IMPORT",
-                          {
-                            position: "top-center",
-                          },
-                        );
-                      } catch {
-                        toast.error("Gagal menyalin data", {
-                          position: "top-center",
-                        });
-                      }
-                    }}
+                    onClick={() =>
+                      copyToClipboard(
+                        outFormula,
+                        "Rumus OUT berhasil disalin, paste di baris produk pertama kolom OUT",
+                      )
+                    }
                   >
                     <Copy className="size-4 mr-1" />
-                    Salin Data
+                    Salin Rumus OUT
                   </Button>
                 )}
               </div>
 
               {text && (
-                <Textarea value={text} readOnly className="min-h-[400px]" />
+                <Textarea value={text} readOnly className="max-h-[200px]" />
               )}
             </CardContent>
           </Card>
@@ -176,7 +241,7 @@ export default function Home() {
                   </h2>
                   {/*<p>SKU: {result.summary.salesSkuCount}</p>*/}
                   <p className="font-semibold text-4xl ">
-                    {result.summary.salesQty + result.summary.unknownQty}
+                    {result.summary.salesQty + result.summary.unknownOutQty}
                   </p>
                 </div>
                 <div>
@@ -185,97 +250,184 @@ export default function Home() {
                   </h2>
                   {/*<p>SKU: {result.summary.refundSkuCount}</p>*/}
                   <p className="font-semibold text-4xl">
-                    {result.summary.refundQty}
+                    {result.summary.refundQty + result.summary.unknownRefundQty}
                   </p>
                 </div>
               </CardContent>
               <Separator className="" />
               <div className=" px-4">
                 <Badge variant="destructive" className="mb-3">
-                  Produk tanpa SKU tetap input manual
+                  Produk tanpa SKU perlu dicek
                 </Badge>
                 <div className="font-semibold flex items-center gap-2 justify-between">
                   <p>Produk terdeteksi tanpa SKU</p>
                   <p>Total: {result.summary.unknownQty} PCS</p>
                 </div>
-                <ul className="mt-2 space-y-1">
-                  {result.parsed.unknown.map((item: any, index: number) => (
-                    <li
-                      key={index}
-                      className="flex justify-between border-b py-1 last:border-b-0"
-                    >
-                      <span>{PRODUCT_ALIASES[item.name] ?? item.name}</span>
-                      <span className="font-semibold">{item.qty} PCS</span>
-                    </li>
-                  ))}
-                </ul>
+
+                <div className="mt-3 space-y-4">
+                  <div>
+                    <div className="flex justify-between text-sm font-semibold">
+                      <p>Sales / OUT</p>
+                      <p>{result.summary.unknownOutQty} PCS</p>
+                    </div>
+                    {result.parsed.unknownOut.length > 0 ? (
+                      <ul className="mt-2 space-y-1">
+                        {result.parsed.unknownOut.map((item, index) => (
+                          <li
+                            key={index}
+                            className="flex justify-between gap-3 border-b py-1 last:border-b-0"
+                          >
+                            <span>
+                              {PRODUCT_ALIASES[item.name] ?? item.name}
+                              {shouldIncludeNameInFormula(item.name) && (
+                                <Badge variant="secondary" className="ml-2">
+                                  Masuk rumus
+                                </Badge>
+                              )}
+                            </span>
+                            <span className="font-semibold">
+                              {item.qty} PCS
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Tidak ada produk sales tanpa SKU.
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between text-sm font-semibold">
+                      <p>Refund</p>
+                      <p>{result.summary.unknownRefundQty} PCS</p>
+                    </div>
+                    {result.parsed.unknownRefund.length > 0 ? (
+                      <ul className="mt-2 space-y-1">
+                        {result.parsed.unknownRefund.map((item, index) => (
+                          <li
+                            key={index}
+                            className="flex justify-between gap-3 border-b py-1 last:border-b-0"
+                          >
+                            <span>
+                              {PRODUCT_ALIASES[item.name] ?? item.name}
+                              {shouldIncludeNameInFormula(item.name) && (
+                                <Badge variant="secondary" className="ml-2">
+                                  Masuk rumus
+                                </Badge>
+                              )}
+                            </span>
+                            <span className="font-semibold">
+                              {item.qty} PCS
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Tidak ada produk refund tanpa SKU.
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
             </Card>
           )}
 
-          {/*{result && (
-            <div className="mt-4 font-bold">
-              {result.summary.unknownQty > 0
-                ? "⚠ Ada item tanpa SKU"
-                : "✅ Semua item berhasil diparse"}
+          {result && (
+            <div className="grid gap-3 md:grid-cols-2 mt-3">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base">Rumus REFUND</CardTitle>
+                    {refundFormulaStats && (
+                      <p className="text-xs text-muted-foreground">
+                        {refundFormulaStats.uniqueItems} item unik ·{" "}
+                        {refundFormulaStats.length} karakter
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    variant="secondary"
+                    disabled={!refundFormula}
+                    onClick={() =>
+                      copyToClipboard(
+                        refundFormula,
+                        "Rumus REFUND berhasil disalin, paste di baris produk pertama kolom REFUND",
+                      )
+                    }
+                  >
+                    <Copy className="size-4 mr-1" />
+                    Salin
+                  </Button>
+                </CardHeader>
+
+                <CardContent className="space-y-2">
+                  {refundFormulaStats?.isNearLimit && (
+                    <Badge variant="destructive">
+                      Formula mendekati batas panjang Google Sheets
+                    </Badge>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Paste formula ini cukup sekali di baris produk pertama kolom
+                    REFUND tanggal yang sesuai.
+                  </p>
+                  {refundFormula ? (
+                    <pre className="max-h-48 overflow-auto text-xs whitespace-pre-wrap border rounded-sm p-3 border-dashed break-all">
+                      {refundFormula}
+                    </pre>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Tidak ada refund pada PDF ini.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base">Rumus OUT</CardTitle>
+                    {outFormulaStats && (
+                      <p className="text-xs text-muted-foreground">
+                        {outFormulaStats.uniqueItems} item unik ·{" "}
+                        {outFormulaStats.length} karakter
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    variant="secondary"
+                    disabled={!outFormula}
+                    onClick={() =>
+                      copyToClipboard(
+                        outFormula,
+                        "Rumus OUT berhasil disalin, paste di baris produk pertama kolom OUT",
+                      )
+                    }
+                  >
+                    <Copy className="size-4 mr-1" />
+                    Salin
+                  </Button>
+                </CardHeader>
+
+                <CardContent className="space-y-2">
+                  {outFormulaStats?.isNearLimit && (
+                    <Badge variant="destructive">
+                      Formula mendekati batas panjang Google Sheets
+                    </Badge>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Paste formula ini cukup sekali di baris produk pertama kolom
+                    OUT tanggal yang sesuai.
+                  </p>
+                  <pre className="max-h-48 overflow-auto text-xs whitespace-pre-wrap border rounded-sm p-3 border-dashed break-all">
+                    {outFormula}
+                  </pre>
+                </CardContent>
+              </Card>
             </div>
           )}
-
-          {result?.parsed?.unknown && (
-            <pre>{JSON.stringify(result.parsed.unknown, null, 2)}</pre>
-          )}*/}
-
-          <div className="grid gap-3 md:grid-cols-2 mt-3">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base">Rumus REFUND</CardTitle>
-                <Button
-                  variant="secondary"
-                  onClick={async () => {
-                    await navigator.clipboard.writeText(formulas.refund);
-
-                    toast.success("Rumus REFUND berhasil disalin", {
-                      position: "top-center",
-                    });
-                  }}
-                >
-                  <Copy className="size-4 mr-1" />
-                  Salin
-                </Button>
-              </CardHeader>
-
-              <CardContent>
-                <pre className="text-xs whitespace-pre-wrap border rounded-sm p-3 border-dashed break-all ">
-                  {formulas.refund}
-                </pre>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base">Rumus OUT</CardTitle>
-                <Button
-                  variant="secondary"
-                  onClick={async () => {
-                    await navigator.clipboard.writeText(formulas.out);
-
-                    toast.success("Rumus OUT berhasil disalin", {
-                      position: "top-center",
-                    });
-                  }}
-                >
-                  <Copy className="size-4 mr-1" />
-                  Salin
-                </Button>
-              </CardHeader>
-
-              <CardContent>
-                <pre className="text-xs whitespace-pre-wrap border rounded-sm p-3 border-dashed break-all">
-                  {formulas.out}
-                </pre>
-              </CardContent>
-            </Card>
-          </div>
         </div>
       </div>
     </main>

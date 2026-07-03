@@ -25,24 +25,19 @@ export default function Help() {
               </ol>
             </div>
             <div>
-              <h2 className="font-semibold text-lg">Paste ke Sheet IMPORT</h2>
+              <h2 className="font-semibold text-lg">Isi Kolom OUT / REFUND</h2>
               <ol className="list-decimal pl-5">
                 <li>Buka Movement Stock.</li>
-                <li>Buka sheet IMPORT.</li>
-                <li>Hapus isi data lama (jangan hapus judul kolom).</li>
-                <li>Paste data yang telah disalin dari website</li>
-              </ol>
-            </div>
-            <div>
-              <h2 className="font-semibold text-lg">Isi Kolom OUT</h2>
-              <ol className="list-decimal pl-5">
-                <li>Cari kolom OUT pada tanggal yang sesuai.</li>
-                <li>Salin rumus OUT yang sudah tersedia pada website.</li>
-                <li>Tempel ke seluruh baris produk..</li>
+                <li>Cari kolom OUT atau REFUND pada tanggal yang sesuai.</li>
+                <li>Salin rumus OUT / REFUND dari website.</li>
+                <li>
+                  Tempel rumus cukup sekali pada baris produk pertama di kolom
+                  yang sesuai.
+                </li>
                 <li>
                   Setelah angka muncul:
                   <ul className="list-disc pl-5">
-                    <li>Salin seluruh hasil.</li>
+                    <li>Salin seluruh hasil pada kolom tersebut.</li>
                     <li>Gunakan Paste Special → Values Only.</li>
                   </ul>
                 </li>

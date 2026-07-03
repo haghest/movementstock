@@ -10,7 +10,7 @@ export function generateImport(
       const refundQty = refund[sku] ?? "";
       const outQty = out[sku] ? -out[sku] : "";
 
-      return `${sku}\t\t${refundQty}\t${outQty}`;
+      return `${sku}\t${refundQty}\t${refundQty}\t${outQty}`;
     })
     .join("\n");
 }

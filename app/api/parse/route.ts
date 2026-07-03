@@ -45,6 +45,7 @@ export async function POST(req: Request) {
       parsed,
       summary,
       importData,
+      text,
     });
   } catch (error) {
     console.error("PARSE ERROR:", error);

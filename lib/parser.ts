@@ -156,11 +156,14 @@ export function parseDailySales(text: string) {
 
   const out = extractItems(salesSection);
   const refund = extractItems(refundSection);
-  const unknown = extractNonSkuItems(text);
+  const unknownOut = extractNonSkuItems(salesSection);
+  const unknownRefund = extractNonSkuItems(refundSection);
 
   return {
     out,
     refund,
-    unknown,
+    unknown: [...unknownOut, ...unknownRefund],
+    unknownOut,
+    unknownRefund,
   };
 }
