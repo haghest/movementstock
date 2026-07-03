@@ -430,6 +430,9 @@ export default function Home() {
               </Card>
             </div>
           )}
+          <p className="text-center font-medium text-xs text-muted-foreground py-8">
+            Versi 0.2
+          </p>
         </div>
       </div>
     </main>
