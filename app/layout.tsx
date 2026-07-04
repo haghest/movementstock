@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { ModeToggle } from "@/components/toggle-theme";
+import Script from "next/script";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -55,6 +56,11 @@ export default function RootLayout({
         </ThemeProvider>
       </body>
       <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID!} />
+      <Script
+        defer
+        src="https://cloud.umami.is/script.js"
+        data-website-id="dca05189-0fef-4e80-b295-27636e9fc96f"
+      ></Script>
     </html>
   );
 }
