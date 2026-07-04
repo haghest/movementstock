@@ -116,9 +116,9 @@ export default function Help() {
         })}
       </div>
 
-      <Separator className="my-6" />
+      {/*<Separator className="my-6" />*/}
 
-      <Card className="mb-8">
+      {/*<Card className="mb-8">
         <CardHeader>
           <CardTitle>Catatan penting</CardTitle>
           <CardDescription>
@@ -147,7 +147,7 @@ export default function Help() {
             </p>
           </div>
         </CardContent>
-      </Card>
+      </Card>*/}
     </main>
   );
 }
