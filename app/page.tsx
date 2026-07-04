@@ -3,11 +3,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-import { Copy, Loader2, FileUp } from "lucide-react";
+import Link from "next/link";
+import { Copy, Loader2, FileUp, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import { ModeToggle } from "@/components/toggle-theme";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import {
   generateSkuArrayFormula,
@@ -168,19 +167,18 @@ export default function Home() {
   }
 
   return (
-    <main className="relative">
-      <div className="fixed bottom-4 right-4">
-        <ModeToggle />
-      </div>
-
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="min-w-2xl max-w-2xl mx-auto p-10  gap-3">
+    <main className="relative min-h-screen px-4 py-6 sm:px-6 lg:px-8 flex justify-center items-center ">
+      <div className="mx-auto  w-full max-w-xl flex-col gap-3 sm:gap-4">
+        <div className="w-full">
           <Card>
-            <CardHeader>
-              <h1 className="text-xl font-semibold">Movement Stock</h1>
-              <p className="text-sm text-muted-foreground">
-                Merubah Sales Details Odoo menjadi format sheets movement stock.
-              </p>
+            <CardHeader className="flex justify-between items-center">
+              <h1 className="text-lg font-medium">Movement Stock</h1>
+              <Button asChild variant="outline">
+                <Link href="/help">
+                  <HelpCircle className="size-4" />
+                  Tutorial
+                </Link>
+              </Button>
             </CardHeader>
 
             <CardContent className="space-y-4">
@@ -188,18 +186,48 @@ export default function Home() {
                 <input
                   type="file"
                   accept=".pdf"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
-                  className="absolute inset-0 cursor-pointer opacity-0"
+                  onChange={(e) => {
+                    const selectedFile = e.target.files?.[0];
+
+                    if (!selectedFile) return;
+
+                    // Hanya PDF
+                    if (selectedFile.type !== "application/pdf") {
+                      toast.error("Hanya file PDF yang diperbolehkan.", {
+                        position: "top-center",
+                      });
+
+                      e.target.value = "";
+                      setFile(null);
+                      return;
+                    }
+
+                    // Maksimal 2 MB
+                    const MAX_SIZE = 2 * 1024 * 1024;
+
+                    if (selectedFile.size > MAX_SIZE) {
+                      toast.error("Ukuran file maksimal 2 MB.", {
+                        position: "top-center",
+                      });
+
+                      e.target.value = "";
+                      setFile(null);
+                      return;
+                    }
+
+                    setFile(selectedFile);
+                  }}
+                  className="absolute inset-0 cursor-pointer opacity-0 "
                 />
 
-                <div className="group  rounded-xl border border-dashed    p-8 transition-all duration-300  ">
+                <div className="group rounded-xl border border-dashed p-5 transition-all duration-300 sm:p-8">
                   <div className="flex flex-col items-center gap-3">
                     <div className="rounded-full  p-4 border ">
                       <FileUp className="size-6" />
                     </div>
 
                     <div className="text-center">
-                      <p className="font-medium">
+                      <p className="break-all font-medium sm:break-normal">
                         {file ? file.name : "Upload .PDF Daily Sales"}
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground">
@@ -210,33 +238,17 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <Button
                   size="lg"
                   onClick={handleUpload}
                   disabled={!file || loading}
-                  className="gap-2"
+                  className="w-full gap-2 sm:w-auto"
                 >
                   {loading && <Loader2 className="h-4 w-4 animate-spin" />}
 
                   {loading ? "Memproses..." : "Proses PDF"}
                 </Button>
-
-                {result && (
-                  <Button
-                    size="lg"
-                    variant="secondary"
-                    onClick={() =>
-                      copyToClipboard(
-                        outFormula,
-                        "Rumus OUT berhasil disalin, paste di baris produk pertama kolom OUT",
-                      )
-                    }
-                  >
-                    <Copy className="size-4 mr-1" />
-                    Salin Rumus OUT
-                  </Button>
-                )}
               </div>
             </CardContent>
           </Card>
@@ -246,13 +258,13 @@ export default function Home() {
               <CardHeader className=" ">
                 <h1 className="text-lg font-semibold">Data</h1>
               </CardHeader>
-              <CardContent className="flex gap-12">
+              <CardContent className="grid grid-cols-2 gap-3 sm:flex sm:gap-12">
                 <div>
                   <h2 className="font-semibold text-xs text-muted-foreground tracking-wider uppercase">
                     Sales
                   </h2>
                   {/*<p>SKU: {result.summary.salesSkuCount}</p>*/}
-                  <p className="font-semibold text-4xl ">
+                  <p className="font-semibold text-3xl sm:text-4xl">
                     {result.summary.salesQty + result.summary.unknownOutQty}
                   </p>
                 </div>
@@ -261,97 +273,96 @@ export default function Home() {
                     Refund
                   </h2>
                   {/*<p>SKU: {result.summary.refundSkuCount}</p>*/}
-                  <p className="font-semibold text-4xl">
+                  <p className="font-semibold text-3xl sm:text-4xl">
                     {result.summary.refundQty + result.summary.unknownRefundQty}
                   </p>
                 </div>
               </CardContent>
-              <Separator className="" />
-              <div className=" px-4">
+            </Card>
+          )}
+
+          {result && unmatchedQty > 0 && (
+            <Card className="mt-3">
+              <CardContent>
                 <Badge variant="destructive" className="mb-3">
-                  Produk perlu input manual
+                  Produk tidak masuk rumus
                 </Badge>
-                <div className="font-semibold flex items-center gap-2 justify-between">
+                {/*<div className="flex flex-col gap-1 font-bold sm:flex-row sm:items-center sm:justify-between">
                   <p>Produk yang tidak masuk rumus</p>
                   <p>Total: {unmatchedQty} PCS</p>
-                </div>
+                </div>*/}
 
-                <div className="mt-3 space-y-4">
-                  <div>
-                    <div className="flex justify-between text-sm font-semibold">
-                      <p>Sales / OUT</p>
-                      <p>{unmatchedOutQty} PCS</p>
-                    </div>
-                    {unmatchedOutItems.length > 0 ? (
+                <div className=" space-y-4">
+                  {unmatchedOutItems.length > 0 && (
+                    <div>
+                      <div className="flex items-center justify-between gap-3 text-sm font-semibold">
+                        <p>Sales / OUT</p>
+                        <p className="shrink-0">Total: {unmatchedOutQty} PCS</p>
+                      </div>
                       <ul className="mt-2 space-y-1">
                         {unmatchedOutItems.map((item, index) => (
                           <li
                             key={index}
-                            className="flex justify-between gap-3 border-b py-1 last:border-b-0"
+                            className="flex items-start justify-between gap-3 border-b py-1 last:border-b-0"
                           >
-                            <span>
+                            <span className="min-w-0 wrap-break-words">
                               {PRODUCT_ALIASES[item.name] ?? item.name}
                             </span>
-                            <span className="font-semibold">
+                            <span className="shrink-0 font-semibold">
                               {item.qty} PCS
                             </span>
                           </li>
                         ))}
                       </ul>
-                    ) : (
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Semua produk sales tanpa SKU sudah masuk rumus.
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-sm font-semibold">
-                      <p>Refund</p>
-                      <p>{unmatchedRefundQty} PCS</p>
                     </div>
-                    {unmatchedRefundItems.length > 0 ? (
+                  )}
+
+                  {unmatchedRefundItems.length > 0 && (
+                    <div>
+                      <div className="flex items-center justify-between gap-3 text-sm font-semibold">
+                        <p>Refund</p>
+                        <p className="shrink-0">
+                          Total: {unmatchedRefundQty} PCS
+                        </p>
+                      </div>
                       <ul className="mt-2 space-y-1">
                         {unmatchedRefundItems.map((item, index) => (
                           <li
                             key={index}
-                            className="flex justify-between gap-3 border-b py-1 last:border-b-0"
+                            className="flex items-start justify-between gap-3 border-b py-1 last:border-b-0"
                           >
-                            <span>
+                            <span className="min-w-0 wrap-break-words">
                               {PRODUCT_ALIASES[item.name] ?? item.name}
                             </span>
-                            <span className="font-semibold">
+                            <span className="shrink-0 font-semibold">
                               {item.qty} PCS
                             </span>
                           </li>
                         ))}
                       </ul>
-                    ) : (
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Semua produk refund tanpa SKU sudah masuk rumus.
-                      </p>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
-              </div>
+              </CardContent>
             </Card>
           )}
 
           {result && (
-            <div className="grid gap-3 md:grid-cols-2 mt-3">
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
+                <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
                     <CardTitle className="text-base">Rumus REFUND</CardTitle>
                     {refundFormulaStats && (
                       <p className="text-xs text-muted-foreground">
-                        {refundFormulaStats.uniqueItems} item unik ·{" "}
+                        {/*{refundFormulaStats.uniqueItems} item unik ·{" "}*/}
                         {refundFormulaStats.length} karakter
                       </p>
                     )}
                   </div>
                   <Button
                     variant="secondary"
+                    className="w-full sm:w-auto"
                     disabled={!refundFormula}
                     onClick={() =>
                       copyToClipboard(
@@ -372,34 +383,29 @@ export default function Home() {
                     </Badge>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    Paste formula ini cukup sekali di baris produk pertama kolom
-                    REFUND tanggal yang sesuai.
+                    Paste formula ini di baris produk pertama kolom REFUND
+                    tanggal yang sesuai.
                   </p>
-                  {refundFormula ? (
-                    <pre className="max-h-48 overflow-auto text-xs whitespace-pre-wrap border rounded-sm p-3 border-dashed break-all">
-                      {refundFormula}
-                    </pre>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Tidak ada refund pada PDF ini.
-                    </p>
-                  )}
+                  <pre className="max-h-48 overflow-auto text-xs whitespace-pre-wrap border rounded-sm p-3 border-dashed break-all">
+                    {refundFormula}
+                  </pre>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
+                <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
                     <CardTitle className="text-base">Rumus OUT</CardTitle>
                     {outFormulaStats && (
                       <p className="text-xs text-muted-foreground">
-                        {outFormulaStats.uniqueItems} item unik ·{" "}
+                        {/*{outFormulaStats.uniqueItems} item unik ·{" "}*/}
                         {outFormulaStats.length} karakter
                       </p>
                     )}
                   </div>
                   <Button
                     variant="secondary"
+                    className="w-full sm:w-auto"
                     disabled={!outFormula}
                     onClick={() =>
                       copyToClipboard(
@@ -420,8 +426,8 @@ export default function Home() {
                     </Badge>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    Paste formula ini cukup sekali di baris produk pertama kolom
-                    OUT tanggal yang sesuai.
+                    Paste formula ini di baris produk pertama kolom OUT tanggal
+                    yang sesuai.
                   </p>
                   <pre className="max-h-48 overflow-auto text-xs whitespace-pre-wrap border rounded-sm p-3 border-dashed break-all">
                     {outFormula}
@@ -430,8 +436,8 @@ export default function Home() {
               </Card>
             </div>
           )}
-          <p className="text-center font-medium text-xs text-muted-foreground py-8">
-            Versi 0.2
+          <p className="text-center font-medium text-xs text-muted-foreground pt-6">
+            Versi 0.2 - 2026
           </p>
         </div>
       </div>

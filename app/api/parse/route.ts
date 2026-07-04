@@ -13,6 +13,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
+    // Validasi filetype di backend (harus PDF)
+    if (file.type !== "application/pdf") {
+      return NextResponse.json(
+        { error: "File must be a PDF document" },
+        { status: 400 },
+      );
+    }
+
+    // Validasi file size di backend (maksimal 2MB)
+    const MAX_SIZE = 2 * 1024 * 1024; // 2MB
+    if (file.size > MAX_SIZE) {
+      return NextResponse.json(
+        { error: "File size exceeds 2MB limit" },
+        { status: 400 },
+      );
+    }
+
     const buffer = new Uint8Array(await file.arrayBuffer());
 
     const result = await extractText(buffer);
@@ -21,31 +38,16 @@ export async function POST(req: Request) {
     const text = Array.isArray(result.text)
       ? result.text.join("\n")
       : String(result.text ?? "");
-    // debug micropouch
-    console.log("HAS MICRO POUCHES:", text.includes("MICRO POUCHES"));
-    const microLines = text
-      .split("\n")
-      .filter((line) => line.includes("MICRO"));
-
-    console.log("MICRO LINES:");
-    console.log(microLines);
 
     const parsed = parseDailySales(text);
-    console.log("UNKNOWN ITEMS:");
-    console.log(parsed.unknown);
     const summary = calculateSummary(parsed);
     const importData = generateImport(parsed.out, parsed.refund);
-
-    console.log("========== RESULT ==========");
-    console.log("OUT:", parsed.out);
-    console.log("REFUND:", parsed.refund);
 
     return NextResponse.json({
       success: true,
       parsed,
       summary,
       importData,
-      text,
     });
   } catch (error) {
     console.error("PARSE ERROR:", error);

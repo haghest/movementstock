@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import { ModeToggle } from "@/components/toggle-theme";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -40,14 +41,17 @@ export default function RootLayout({
         geist.variable,
       )}
     >
-      <body className=" font-[Inter] bg-[#F1F0EC] dark:bg-[#0a0a0a]">
+      <body className=" bg-[#F1F0EC] dark:bg-[#0a0a0a]">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          {children} <Toaster toastOptions={{ className: "font-[Inter]" }} />
+          <div className="fixed bottom-4 right-4 z-50">
+            <ModeToggle />
+          </div>
+          {children} <Toaster toastOptions={{ className: "font-[Geist]" }} />
         </ThemeProvider>
       </body>
       <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID!} />
