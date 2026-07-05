@@ -97,7 +97,6 @@ function extractNonSkuItems(text: string): UnknownItem[] {
     "MUNDAKA KENSINGTON",
     "Petromax",
     "Keychain Kuksa Standard - One Shot ",
-    "Neem Style Twilly",
   ];
 
   const lines = text
