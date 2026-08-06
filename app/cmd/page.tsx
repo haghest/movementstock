@@ -563,27 +563,25 @@ export default function CmdPage() {
             >
               {/* Header Logo */}
               <div className="text-center border-black border-dashed flex flex-col items-center">
-                {/* <img
+                <img
                   src="/tttm.jpg"
                   alt="Ticket to the Moon Logo"
                   className="h-10 w-auto mx-auto mb-1 object-contain mix-blend-multiply"
-                /> */}
-                <p className="font-semibold text-lg py-1 inline-block">
+                />
+
+                <p className="font-semibold text-lg py-1 inline-block font-mono">
                   Express #{expressNumber}
                 </p>
-                {/* Timestamp */}
-                <div className="py-1  border-black border-dashed text-center text-[10px] text-neutral-600">
-                  <span>{createdTime || "TODAY"}</span>
-                </div>
+
               </div>
 
 
               {/* PICKUP BADGE */}
               <div className="my-2 text-center border-t border-black border-dashed pt-2">
-                <p className="text-[8px] uppercase font-bold text-neutral-600 tracking-wider">
+                <p className="text-[10px] uppercase font-bold text-neutral-600 tracking-wider">
                   Tanggal Pickup
                 </p>
-                <p className="text-xs font-extrabold uppercase mt-0.5 text-black">
+                <p className="text-xs font-bold mt-0.5 text-black">
                   {formatDisplayDate(pickupDate)}
                 </p>
                 <p className="text-[11px] font-bold text-neutral-900">
@@ -593,13 +591,13 @@ export default function CmdPage() {
 
               {/* Customer Info */}
               <div className="py-1.5 border-b border-black border-dashed space-y-0.5 text-[11px]">
-                <div className="flex justify-between">
+                <div className="flex justify-between font-mono">
                   <span className="text-neutral-600">CUSTOMER</span>
-                  <span className="font-bold uppercase">{customerName || "-"}</span>
+                  <span className="font-semibold uppercase">{customerName || "-"}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between font-mono">
                   <span className="text-neutral-600">STAFF:</span>
-                  <span className="font-bold uppercase">{staffName || "-"}</span>
+                  <span className="font-semibold uppercase">{staffName || "-"}</span>
                 </div>
               </div>
 
@@ -610,21 +608,21 @@ export default function CmdPage() {
                   <span>QYT: {totalQty} PCS</span>
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   {activeItems.length > 0 ? (
                     activeItems.map((item) => (
                       <div
                         key={item.name}
-                        className="flex justify-between items-center font-bold text-xs  "
+                        className="flex justify-between items-center font-semibold text-xs  "
                       >
                         <span>{item.name}</span>
-                        <span className="text-[10px]">
+                        <span className="text-xs font-mono">
                           x{item.qty}
                         </span>
                       </div>
                     ))
                   ) : (
-                    <p className="text-[10px] italic text-neutral-400 text-center py-1">
+                    <p className="text-xs italic text-neutral-400 text-center py-1">
                       (Belum ada barang dipilih)
                     </p>
                   )}
@@ -644,12 +642,16 @@ export default function CmdPage() {
               )}
               {/* WhatsApp QR Code */}
               <div className="pt-2 pb-1 text-center flex flex-col items-center">
-                <p className="font-bold">WhatsApp Us</p>
+
                 <img
                   src="/qr.png"
                   alt="WhatsApp QR Code Toko"
                   className="w-full h-auto aspect-square object-contain mix-blend-multiply mx-auto"
                 />
+              </div>
+              {/* Timestamp */}
+              <div className="py-1  border-black border-dashed text-center text-[10px] text-neutral-600">
+                <span>{createdTime || "TODAY"}</span>
               </div>
             </div>
           </CardContent>
@@ -675,7 +677,6 @@ export default function CmdPage() {
             {/* Sub-bar Notion Style: Filter | Sort (Left) & Search (Right) */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-
                 <Button
                   variant="ghost"
                   size="sm"
@@ -717,11 +718,11 @@ export default function CmdPage() {
                 <tbody className="divide-y divide-border/40">
                   {filteredHistory.map((item) => (
                     <tr key={item.id} className="hover:bg-muted/20 transition-colors">
-                      <td className="py-3 px-6 font-semibold uppercase text-foreground">
+                      <td className="py-3 px-6 font-semibold capitalize text-foreground">
                         {item.customerName}
                       </td>
-                      <td className="py-3 px-4 font-bold text-primary font-mono text-xs">
-                        EXPRESS#{item.expressNumber}
+                      <td className="py-3 px-4 font-semibold text-xs">
+                        Express#{item.expressNumber}
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex flex-wrap gap-1">
@@ -735,7 +736,7 @@ export default function CmdPage() {
                       <td className="py-3 px-4 text-foreground font-medium">
                         {formatDisplayDate(item.pickupDate)} {item.pickupTime && `(${item.pickupTime})`}
                       </td>
-                      <td className="py-3 px-4 text-muted-foreground">
+                      <td className="py-3 px-4 text-muted-foreground capitalize">
                         {item.staffName || "-"}
                       </td>
                       <td className="py-3 px-6 text-right text-muted-foreground font-mono text-[11px]">
