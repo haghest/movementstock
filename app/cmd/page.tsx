@@ -334,7 +334,7 @@ export default function CmdPage() {
               </CardTitle>
               <div className="flex items-center gap-1.5 text-xs">
                 <span className="font-medium text-muted-foreground">EXPRESS</span>
-                <span className="font-semibold text-primary text-lg">#{expressNumber}</span>
+                <span className="font-semibold text-primary">#{expressNumber}</span>
                 <div className="flex items-center gap-1 ml-1">
                   <Button
                     type="button"
@@ -376,7 +376,7 @@ export default function CmdPage() {
             {/* 1. JUMLAH BARANG (SIMPLE COUNTER ROWS) */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                <label className="text-xs font-bold   text-muted-foreground">
                   Item
                 </label>
                 <Badge variant={totalQty > 0 ? "default" : "outline"} className="text-[11px]">
@@ -391,7 +391,7 @@ export default function CmdPage() {
                   return (
                     <div
                       key={bag}
-                      className={`flex items-center justify-between border p-2 rounded-md transition-all ${isSelected
+                      className={`flex items-center justify-between border p-2 rounded-lg transition-all ${isSelected
                         ? "bg-background border border-primary/40"
                         : "hover:bg-muted/50 border border-transparent"
                         }`}
@@ -404,8 +404,7 @@ export default function CmdPage() {
                         <Button
                           type="button"
                           variant="outline"
-                          size="sm"
-                          className="h-7 w-7 p-0"
+                          size="icon-sm"
                           onClick={() => updateQty(bag, -1)}
                           disabled={qty === 0}
                         >
@@ -417,8 +416,7 @@ export default function CmdPage() {
                         <Button
                           type="button"
                           variant="outline"
-                          size="sm"
-                          className="h-7 w-7 p-0"
+                          size="icon-sm"
                           onClick={() => updateQty(bag, 1)}
                         >
                           <Plus className="size-3" />
