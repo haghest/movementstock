@@ -533,7 +533,7 @@ export default function CmdPage() {
               <button
                 type="button"
                 onClick={() => setPaperSize("58mm")}
-                className={`px-2.5 py-0.5 rounded font-semibold transition-all ${paperSize === "58mm"
+                className={`px-2.5 py-0.5 rounded-sm font-semibold transition-all ${paperSize === "58mm"
                   ? "bg-background text-foreground shadow-2xs"
                   : "text-muted-foreground hover:text-foreground"
                   }`}
@@ -543,7 +543,7 @@ export default function CmdPage() {
               <button
                 type="button"
                 onClick={() => setPaperSize("80mm")}
-                className={`px-2.5 py-0.5 rounded font-semibold transition-all ${paperSize === "80mm"
+                className={`px-2.5 py-0.5 rounded-sm font-semibold transition-all ${paperSize === "80mm"
                   ? "bg-background text-foreground shadow-2xs"
                   : "text-muted-foreground hover:text-foreground"
                   }`}

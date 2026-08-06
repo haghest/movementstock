@@ -37,10 +37,10 @@ export default function RootLayout({
       className={cn(
         "h-full",
         "antialiased",
+        inter.variable,
         geistSans.variable,
         geistMono.variable,
-        "font-sans",
-
+        "font-sans"
       )}
     >
       <body className="bg-[#F1F0EC] dark:bg-[#0a0a0a] min-h-screen font-sans flex flex-col">
