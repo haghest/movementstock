@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { Copy, Loader2, FileUp, HelpCircle } from "lucide-react";
+import { Copy, Loader2, FileUp, HelpCircle, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { ModeToggle } from "@/components/toggle-theme";
 import { Badge } from "@/components/ui/badge";
@@ -115,26 +115,26 @@ export default function Home() {
     : [];
   const outFormula = result
     ? generateSkuArrayFormula(result.parsed.out, {
-        negative: true,
-        nameItems: outNameItems,
-      })
+      negative: true,
+      nameItems: outNameItems,
+    })
     : "";
   const refundFormula = result
     ? generateSkuArrayFormula(result.parsed.refund, {
-        nameItems: refundNameItems,
-      })
+      nameItems: refundNameItems,
+    })
     : "";
   const outFormulaStats = result
     ? getFormulaStats(
-        outFormula,
-        result.summary.salesSkuCount + outNameItems.length,
-      )
+      outFormula,
+      result.summary.salesSkuCount + outNameItems.length,
+    )
     : null;
   const refundFormulaStats = result
     ? getFormulaStats(
-        refundFormula,
-        result.summary.refundSkuCount + refundNameItems.length,
-      )
+      refundFormula,
+      result.summary.refundSkuCount + refundNameItems.length,
+    )
     : null;
   const unmatchedOutItems = result
     ? getItemsNotInFormula(result.parsed.unknownOut)
@@ -168,18 +168,20 @@ export default function Home() {
   }
 
   return (
-    <main className="relative min-h-screen px-4 py-6 sm:px-6 lg:px-8 flex justify-center items-center ">
+    <main className="relative flex-1 px-4 py-4 sm:px-6 lg:px-8 flex justify-center items-center">
       <div className="mx-auto  w-full max-w-xl flex-col gap-3 sm:gap-4">
         <div className="w-full">
           <Card>
-            <CardHeader className="flex justify-between items-center">
-              <h1 className="text-lg font-medium">Movement Stock</h1>
-              <Button asChild variant="outline">
-                <Link href="/help">
-                  <HelpCircle className="size-4" />
-                  Tutorial
-                </Link>
-              </Button>
+            <CardHeader className="flex flex-row justify-between items-center">
+              <h1 className="text-lg font-semibold tracking-tight">Movement Stock</h1>
+              <div className="flex items-center gap-2">
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/help">
+                    <HelpCircle className="size-4 mr-1.5" />
+                    Tutorial
+                  </Link>
+                </Button>
+              </div>
             </CardHeader>
 
             <CardContent className="space-y-4">

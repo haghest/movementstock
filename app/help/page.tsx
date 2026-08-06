@@ -6,6 +6,7 @@ import {
   Copy,
   Table2,
   FileSpreadsheet,
+  Printer,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -66,6 +67,18 @@ const steps = [
       "Blok hasil pada kolom OUT / REFUND yang baru terisi.",
       "Copy hasil tersebut.",
       "Klik salah satu kolom, lalu tekan Paste special → Values only.",
+    ],
+  },
+  {
+    title: "Cetak Tiket Custom Tas (CMD)",
+    description:
+      "Gunakan menu CMD Ticket untuk mencetak tiket instruksi custom tas pada kertas thermal.",
+    icon: Printer,
+    items: [
+      "Klik tombol 'CMD Ticket' di header halaman utama atau navigasikan ke /cmd.",
+      "Pilih jenis barang (Mini Backpack 15L, Backpack XS 6L, Eco Bag, Sling Bag, atau Custom).",
+      "Isi nama customer, tanggal & jam pickup, serta nama staff handle.",
+      "Pilih ukuran kertas (58mm / 80mm) lalu klik 'Print Tiket Thermal'.",
     ],
   },
 ];

@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { ModeToggle } from "@/components/toggle-theme";
+import { Navbar } from "@/components/navbar";
 import Script from "next/script";
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,7 +22,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Movement Stock",
+  title: "Movement Stock & Custom Express",
 };
 
 export default function RootLayout({
@@ -39,16 +40,17 @@ export default function RootLayout({
         geistSans.variable,
         geistMono.variable,
         "font-sans",
-        geist.variable,
+
       )}
     >
-      <body className=" bg-[#F1F0EC] dark:bg-[#0a0a0a]">
+      <body className="bg-[#F1F0EC] dark:bg-[#0a0a0a] min-h-screen font-sans flex flex-col">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
+          <Navbar />
           <div className="fixed bottom-4 right-4 z-50">
             <ModeToggle />
           </div>
