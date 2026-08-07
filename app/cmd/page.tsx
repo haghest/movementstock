@@ -805,14 +805,14 @@ export default function CmdPage() {
               </div>
 
               {/* Customer Info */}
-              <div className="py-1.5 border-b border-black border-dashed space-y-0.5 text-[11px]">
-                <div className="flex justify-between font-mono">
-                  <span className="text-neutral-600">CUSTOMER</span>
-                  <span className="font-semibold uppercase">{customerName || "-"}</span>
+              <div className="py-1.5 border-b border-black border-dashed space-y-1 text-[11px]">
+                <div className="flex justify-between gap-3 font-mono">
+                  <span className="text-neutral-600 shrink-0">CUSTOMER:</span>
+                  <span className="font-semibold uppercase text-right break-words">{customerName || "-"}</span>
                 </div>
-                <div className="flex justify-between font-mono">
-                  <span className="text-neutral-600">STAFF:</span>
-                  <span className="font-semibold uppercase">{staffName || "-"}</span>
+                <div className="flex justify-between gap-3 font-mono">
+                  <span className="text-neutral-600 shrink-0">STAFF:</span>
+                  <span className="font-semibold uppercase text-right break-words">{staffName || "-"}</span>
                 </div>
               </div>
 
@@ -828,10 +828,10 @@ export default function CmdPage() {
                     activeItems.map((item) => (
                       <div
                         key={item.name}
-                        className="flex justify-between items-center font-medium text-xs  "
+                        className="flex justify-between items-center font-medium text-xs gap-2"
                       >
                         <span>{item.name}</span>
-                        <span className="font-mono">
+                        <span className="font-mono shrink-0">
                           x{item.qty}
                         </span>
                       </div>

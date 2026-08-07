@@ -2,26 +2,24 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Movement Stock",
-    short_name: "Movement Stock",
+    name: "Custom Express",
+    short_name: "Custom Express",
 
-    start_url: "/",
+    start_url: "/cmd",
 
     display: "standalone",
 
     background_color: "#ffffff",
     theme_color: "#ffffff",
 
-    orientation: "landscape",
-
     icons: [
       {
-        src: "/movementstock.png",
+        src: "/cmd.png",
         sizes: "192x192",
         type: "image/png",
       },
       {
-        src: "/movementstock.png",
+        src: "/cmd.png",
         sizes: "852x852",
         type: "image/png",
       },

@@ -24,7 +24,7 @@ export function Navbar() {
 
   return (
     <header className="w-full py-4 no-print flex justify-center">
-      <nav className="flex items-center gap-1 bg-muted/60 p-1 rounded-xl border text-xs">
+      <nav className="flex items-center gap-1 bg-muted/60 p-1 rounded-xl border text-xs bg-white dark:bg-background">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
@@ -35,14 +35,14 @@ export function Navbar() {
               className={cn(
                 "relative flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors select-none",
                 isActive
-                  ? "text-white"
+                  ? "text-white dark:text-black"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
               {isActive && (
                 <motion.div
                   layoutId="active-nav-pill"
-                  className="absolute inset-0 bg-black rounded-lg shadow-2xs"
+                  className="absolute inset-0 bg-black dark:bg-white rounded-lg shadow-2xs"
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}

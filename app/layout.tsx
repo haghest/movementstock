@@ -22,7 +22,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Movement Stock & Custom Express",
+  title: "Movement Stock",
+  icons: {
+    icon: "/movementstock.png",
+  },
 };
 
 export default function RootLayout({
