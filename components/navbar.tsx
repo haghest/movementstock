@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PackageCheck, SwatchBook } from "lucide-react";
@@ -8,6 +9,27 @@ import { cn } from "@/lib/utils";
 
 export function Navbar() {
   const pathname = usePathname();
+
+  useEffect(() => {
+    const iconPath = pathname === "/cmd" ? "/cmd-favicon.ico" : "/movementstock.png";
+    const links = document.querySelectorAll("link[rel*='icon']");
+    if (links.length > 0) {
+      links.forEach((link) => {
+        (link as HTMLLinkElement).href = iconPath;
+      });
+    } else {
+      const link = document.createElement("link");
+      link.rel = "icon";
+      link.href = iconPath;
+      document.head.appendChild(link);
+    }
+  }, [pathname]);
+
+  if (pathname?.startsWith("/track")) {
+    return null;
+  }
+
+
 
   const navItems = [
     {

@@ -49,8 +49,8 @@ export default function RootLayout({
       <body className="bg-[#F1F0EC] dark:bg-[#0a0a0a] min-h-screen font-sans flex flex-col">
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="light"
+          enableSystem={false}
           disableTransitionOnChange
         >
           <Navbar />

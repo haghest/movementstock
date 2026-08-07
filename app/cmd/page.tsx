@@ -53,6 +53,8 @@ export const BAG_ITEMS = [
 
 export type BagName = (typeof BAG_ITEMS)[number];
 
+export type OrderStatus = "processing" | "ready" | "completed";
+
 export type CmdHistoryItem = {
   id: string;
   expressNumber: number;
@@ -63,6 +65,9 @@ export type CmdHistoryItem = {
   pickupTime: string;
   staffName: string;
   notes?: string;
+  status?: OrderStatus;
+  trackingCode?: string;
+  createdAt?: string;
   printedTime: string;
 };
 
@@ -224,6 +229,56 @@ function getLocalDateString(d: Date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
+function generateTrackingCode(expressNum: number, dateObj: Date = new Date()) {
+  const yy = String(dateObj.getFullYear()).slice(-2);
+  const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const dd = String(dateObj.getDate()).padStart(2, "0");
+  const numStr = String(expressNum).padStart(2, "0");
+  return `EX${yy}${mm}${dd}-${numStr}`;
+}
+
+function formatTimestamp(isoOrText?: string) {
+  if (!isoOrText) return "-";
+  try {
+    const d = new Date(isoOrText);
+    if (isNaN(d.getTime())) return isoOrText;
+    return d.toLocaleString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return isoOrText;
+  }
+}
+
+function splitTimestamp(isoOrText?: string) {
+  if (!isoOrText) return { date: "-", time: "" };
+  try {
+    const d = new Date(isoOrText);
+    if (isNaN(d.getTime())) {
+      const parts = isoOrText.split(",");
+      if (parts.length === 2) {
+        return { date: parts[0].trim(), time: parts[1].trim() };
+      }
+      return { date: isoOrText, time: "" };
+    }
+    const date = d.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+    });
+    const time = d.toLocaleTimeString("id-ID", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return { date, time };
+  } catch {
+    return { date: isoOrText, time: "" };
+  }
+}
+
 export default function CmdPage() {
   // Quantities for each of the 4 bags
   const [quantities, setQuantities] = useState<Record<BagName, number>>({
@@ -251,6 +306,11 @@ export default function CmdPage() {
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [savedStaffs, setSavedStaffs] = useState<string[]>([]);
   const [copiedPos, setCopiedPos] = useState(false);
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
 
   useEffect(() => {
     generateNewTicketId();
@@ -278,35 +338,22 @@ export default function CmdPage() {
             pickupTime: row.pickup_time,
             staffName: row.staff_name,
             notes: row.notes || undefined,
-            printedTime: row.printed_time,
+            status: (row.status as OrderStatus) || "processing",
+            trackingCode: row.tracking_code || generateTrackingCode(row.express_number, new Date(row.created_at || Date.now())),
+            createdAt: row.created_at,
+            printedTime: formatTimestamp(row.created_at || row.printed_time),
           }));
           setHistory(mapped);
           const maxNum = Math.max(...mapped.map((m) => m.expressNumber));
           setExpressNumber(maxNum + 1);
-          return;
+        } else {
+          setHistory([]);
+          setExpressNumber(1);
         }
       } catch (err) {
-        console.warn("Supabase fetch fallback to local:", err);
-      }
-
-      // Fallback to localStorage
-      try {
-        const savedDate = localStorage.getItem("cmd_express_date");
-        const savedCount = localStorage.getItem("cmd_express_count");
-        const savedHistory = localStorage.getItem("cmd_express_history");
-
-        if (savedDate !== today) {
-          localStorage.setItem("cmd_express_date", today);
-          localStorage.setItem("cmd_express_count", "1");
-          localStorage.removeItem("cmd_express_history");
-          setExpressNumber(1);
-          setHistory([]);
-        } else {
-          if (savedCount) setExpressNumber(parseInt(savedCount, 10) || 1);
-          if (savedHistory) setHistory(JSON.parse(savedHistory));
-        }
-      } catch {
-        // ignore
+        console.warn("Supabase fetch error:", err);
+        setHistory([]);
+        setExpressNumber(1);
       }
     }
 
@@ -332,7 +379,10 @@ export default function CmdPage() {
               pickupTime: row.pickup_time,
               staffName: row.staff_name,
               notes: row.notes || undefined,
-              printedTime: row.printed_time,
+              status: (row.status as OrderStatus) || "processing",
+              trackingCode: row.tracking_code || generateTrackingCode(row.express_number, new Date(row.created_at || Date.now())),
+              createdAt: row.created_at,
+              printedTime: formatTimestamp(row.created_at || row.printed_time),
             };
             setHistory((prev) => {
               if (prev.some((h) => h.id === mappedItem.id)) return prev;
@@ -346,19 +396,10 @@ export default function CmdPage() {
       // ignore
     }
 
-    try {
-      const storedStaffs = localStorage.getItem("cmd_saved_staffs");
-      if (storedStaffs) {
-        setSavedStaffs(JSON.parse(storedStaffs));
-      } else {
-        setSavedStaffs([
-          "Angga", "Ari", "Avita", "Dek Run", "Evita", "Gus De", "Haga",
-          "Ivanna", "Merry", "Nita", "Nyom", "Ocha", "Rama", "Siyut", "Yayuk"
-        ]);
-      }
-    } catch {
-      // ignore
-    }
+    setSavedStaffs([
+      "Angga", "Ari", "Avita", "Dek Run", "Evita", "Gus De", "Haga",
+      "Ivanna", "Merry", "Nita", "Nyom", "Ocha", "Rama", "Siyut", "Yayuk"
+    ]);
 
     return () => {
       if (channel) supabase.removeChannel(channel);
@@ -433,10 +474,12 @@ export default function CmdPage() {
     const currentExpress = expressNumber;
     const nextExpress = currentExpress + 1;
 
-    const printedTimeStr = new Date().toLocaleTimeString("id-ID", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const nowIso = new Date().toISOString();
+    const printedTimeStr = formatTimestamp(nowIso);
+    setCreatedTime(printedTimeStr);
+
+    const tCode = generateTrackingCode(currentExpress);
+    setTicketId(tCode);
 
     const newItem: CmdHistoryItem = {
       id: Date.now().toString(),
@@ -448,6 +491,9 @@ export default function CmdPage() {
       pickupTime,
       staffName: staffName.trim(),
       notes: notes.trim() || undefined,
+      status: "processing",
+      trackingCode: tCode,
+      createdAt: nowIso,
       printedTime: printedTimeStr,
     };
 
@@ -470,38 +516,57 @@ export default function CmdPage() {
             pickup_date: pickupDate,
             pickup_time: pickupTime,
             notes: notes.trim() || null,
+            status: "processing",
+            tracking_code: tCode,
             printed_time: printedTimeStr,
           },
         ])
         .select()
         .single();
 
-      if (data && !error) {
+      if (error) {
+        console.error("Supabase insert error:", error);
+        // Fallback insert if new columns don't exist yet on user's Supabase DB schema
+        const { data: fbData, error: fbError } = await supabase
+          .from("cmd_express_history")
+          .insert([
+            {
+              express_number: currentExpress,
+              customer_name: customerName.trim(),
+              customer_phone: customerPhone.trim() || null,
+              staff_name: staffName.trim(),
+              items: activeItems,
+              total_qty: totalQty,
+              pickup_date: pickupDate,
+              pickup_time: pickupTime,
+              notes: notes.trim() || null,
+              printed_time: printedTimeStr,
+            },
+          ])
+          .select()
+          .single();
+
+        if (fbError) {
+          toast.error(`Gagal ke Supabase: ${fbError.message}`);
+        } else if (fbData) {
+          newItem.id = fbData.id;
+        }
+      } else if (data) {
         newItem.id = data.id;
+        if (data.created_at) {
+          newItem.createdAt = data.created_at;
+          newItem.printedTime = formatTimestamp(data.created_at);
+        }
       }
-    } catch (err) {
-      console.warn("Supabase insert warning:", err);
+    } catch (err: any) {
+      console.error("Supabase insert exception:", err);
+      toast.error(`Error menyimpan ke database: ${err?.message || err}`);
     }
 
-    // Save staff name to suggestions
+    // Save staff name to suggestions list
     const trimmedStaff = staffName.trim();
     if (trimmedStaff && !savedStaffs.some((s) => s.toLowerCase() === trimmedStaff.toLowerCase())) {
-      const updatedStaffs = [trimmedStaff, ...savedStaffs];
-      setSavedStaffs(updatedStaffs);
-      try {
-        localStorage.setItem("cmd_saved_staffs", JSON.stringify(updatedStaffs));
-      } catch {
-        // ignore
-      }
-    }
-
-    try {
-      const today = getLocalDateString();
-      localStorage.setItem("cmd_express_date", today);
-      localStorage.setItem("cmd_express_count", String(nextExpress));
-      localStorage.setItem("cmd_express_history", JSON.stringify(newHistory));
-    } catch {
-      // ignore
+      setSavedStaffs([trimmedStaff, ...savedStaffs]);
     }
 
     toast.success(`Mencetak Tiket EXPRESS#${currentExpress}...`, { position: "top-center" });
@@ -512,14 +577,75 @@ export default function CmdPage() {
     }, 150);
   }
 
+  function handleReprint(item: CmdHistoryItem) {
+    const tCode = item.trackingCode || (item.createdAt ? generateTrackingCode(item.expressNumber, new Date(item.createdAt)) : generateTrackingCode(item.expressNumber));
+    setTicketId(tCode);
+    setExpressNumber(item.expressNumber);
+    setCustomerName(item.customerName);
+    setStaffName(item.staffName);
+    setPickupDate(item.pickupDate);
+    setPickupTime(item.pickupTime);
+    setNotes(item.notes || "");
+    const formattedTimestamp = formatTimestamp(item.createdAt || item.printedTime);
+    setCreatedTime(formattedTimestamp);
+
+    const newQuantities: Record<BagName, number> = {
+      "Mini Backpack 15L": 0,
+      "Backpack XS 6L": 0,
+      "Eco Bag": 0,
+      "Sling Bag": 0,
+      "Embroidery": 0,
+    };
+    item.items.forEach((it) => {
+      newQuantities[it.name] = it.qty;
+    });
+    setQuantities(newQuantities);
+
+    toast.success(`Mencetak ulang Tiket EXPRESS#${item.expressNumber}...`, { position: "top-center" });
+    setTimeout(() => {
+      window.print();
+    }, 150);
+  }
+
+  async function handleToggleStatus(item: CmdHistoryItem) {
+    const nextStatus: OrderStatus =
+      item.status === "processing"
+        ? "ready"
+        : item.status === "ready"
+          ? "completed"
+          : "processing";
+
+    setHistory((prev) =>
+      prev.map((h) => (h.id === item.id ? { ...h, status: nextStatus } : h))
+    );
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("cmd_express_history")
+      .update({ status: nextStatus })
+      .eq("id", item.id);
+
+    if (error) {
+      toast.error("Gagal memperbarui status ke Supabase");
+    } else {
+      toast.success(
+        `Status Express #${item.expressNumber} diubah ke ${nextStatus === "ready"
+          ? "Siap Pickup 🟢"
+          : nextStatus === "completed"
+            ? "Selesai ✅"
+            : "Diproses ⏳"
+        }`
+      );
+    }
+  }
+
   const formatDisplayDate = (dateStr: string) => {
     if (!dateStr) return "-";
     try {
       const dateObj = new Date(dateStr);
       return dateObj.toLocaleDateString("id-ID", {
         day: "numeric",
-        month: "long",
-        year: "numeric",
+        month: "short",
       });
     } catch {
       return dateStr;
@@ -855,14 +981,23 @@ export default function CmdPage() {
                   </p>
                 </div>
               )}
-              {/* WhatsApp QR Code */}
-              <div className="pt-2 pb-1 text-center flex flex-col items-center">
-
+              {/* Tracking QR Code */}
+              <div className="pt-2 pb-1 text-center flex flex-col items-center space-y-0.5">
                 <img
-                  src="/qr.png"
-                  alt="WhatsApp QR Code Toko"
-                  className="w-full h-auto aspect-square object-contain mix-blend-multiply mx-auto"
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
+                    origin
+                      ? `${origin}/track?id=${ticketId || generateTrackingCode(expressNumber)}`
+                      : `https://moon-stock-parser.vercel.app/track?id=${ticketId || generateTrackingCode(expressNumber)}`
+                  )}`}
+                  alt="Scan untuk tracking pesanan"
+                  className="w-24 h-24 aspect-square object-contain mix-blend-multiply mx-auto"
                 />
+                <p className="text-[9px] font-mono text-neutral-900 font-bold uppercase tracking-tight pt-0.5">
+                  Tracking Code: {ticketId || generateTrackingCode(expressNumber)}
+                </p>
+                <p className="text-[8px] font-mono text-neutral-600 font-semibold uppercase tracking-tight">
+                  Scan to Track Bag Status
+                </p>
               </div>
               {/* Timestamp */}
               <div className="py-1 text-center text-[10px] text-neutral-600">
@@ -921,21 +1056,22 @@ export default function CmdPage() {
               <table className="w-full text-xs text-left border-collapse">
                 <thead>
                   <tr className="border-y border-border/60 bg-muted/20 text-[11px] text-muted-foreground font-normal whitespace-nowrap">
-                    <th className="py-2.5 px-6 font-normal">No</th>
-                    <th className="py-2.5 px-4 font-normal">Nama Cust</th>
-                    <th className="py-2.5 px-4 font-normal">Item Custom</th>
-                    <th className="py-2.5 px-4 font-normal">Pickup</th>
-                    <th className="py-2.5 px-4 font-normal">Staff</th>
-                    <th className="py-2.5 px-4 font-normal text-right">Waktu Cetak</th>
-                    <th className="py-2.5 px-4 font-normal">Customer Note</th>
-                    <th className="py-2.5 px-6 font-normal text-right">Aksi</th>
+                    <th className="py-2.5 px-6">Express</th>
+                    <th className="py-2.5 px-4">Nama</th>
+                    <th className="py-2.5 px-4">Item Custom</th>
+                    <th className="py-2.5 px-4">Waktu Pickup</th>
+                    <th className="py-2.5 px-4">Staff</th>
+                    <th className="py-2.5 px-4 text-right">Tanggal</th>
+                    <th className="py-2.5 px-3.5">Status</th>
+                    <th className="py-2.5 px-4">Note</th>
+                    <th className="py-2.5 px-6">Print</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border/40">
+                <tbody className="divide-y divide-border">
                   {filteredHistory.map((item) => (
                     <tr key={item.id} className="hover:bg-muted/20 transition-colors">
                       <td className="py-3 px-6 font-semibold text-xs text-foreground whitespace-nowrap">
-                        Express#{item.expressNumber}
+                        #{item.expressNumber}
                       </td>
                       <td className="py-3 px-4 font-semibold capitalize text-foreground whitespace-nowrap">
                         {item.customerName}
@@ -943,7 +1079,7 @@ export default function CmdPage() {
                       <td className="py-3 px-4">
                         <div className="flex flex-wrap gap-1">
                           {item.items.map((it, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-[10px] font-medium bg-muted/60 text-foreground border-border/40 whitespace-nowrap">
+                            <Badge key={idx} variant="secondary" className="text-xs font-medium bg-muted/60 text-foreground border-border/40 whitespace-nowrap">
                               {it.name} (x{it.qty})
                             </Badge>
                           ))}
@@ -962,8 +1098,52 @@ export default function CmdPage() {
                       <td className="py-3 px-4 text-muted-foreground capitalize whitespace-nowrap">
                         {item.staffName || "-"}
                       </td>
-                      <td className="py-3 px-4 text-right text-muted-foreground font-mono text-[11px] whitespace-nowrap">
-                        {item.printedTime}
+                      <td className="py-3 px-4 text-right whitespace-nowrap">
+                        {(() => {
+                          const { date, time } = splitTimestamp(item.createdAt || item.printedTime);
+                          return (
+                            <div className="flex flex-col text-xs leading-tight items-start">
+                              <span className="font-semibold text-foreground">{date}</span>
+                              {time && (
+                                <span className="text-[11px] text-muted-foreground font-normal mt-0.5">
+                                  {time}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </td>
+                      <td className="py-3 px-3.5 whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleStatus(item)}
+                          className={cn(
+                            "px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors flex items-center gap-1 cursor-pointer select-none",
+                            item.status === "ready"
+                              ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/20"
+                              : item.status === "completed"
+                                ? "bg-blue-500/10 text-blue-600 border-blue-500/30 hover:bg-blue-500/20"
+                                : "bg-amber-500/10 text-amber-600 border-amber-500/30 hover:bg-amber-500/20"
+                          )}
+                          title="Klik untuk ubah status pesanan"
+                        >
+                          {item.status === "ready" ? (
+                            <>
+                              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                              Siap Pickup
+                            </>
+                          ) : item.status === "completed" ? (
+                            <>
+                              <span className="size-1.5 rounded-full bg-blue-500" />
+                              Selesai
+                            </>
+                          ) : (
+                            <>
+                              <span className="size-1.5 rounded-full bg-amber-500" />
+                              Diproses
+                            </>
+                          )}
+                        </button>
                       </td>
                       <td className="py-3 px-4 text-xs text-foreground leading-snug whitespace-pre-wrap break-words max-w-[200px]">
                         {item.notes ? (
@@ -973,26 +1153,37 @@ export default function CmdPage() {
                         )}
                       </td>
                       <td className="py-3 px-6 text-right whitespace-nowrap">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const pDate = item.pickupDate ? formatDisplayDate(item.pickupDate) : "";
-                            const pTime = item.pickupTime ? ` ${item.pickupTime}` : "";
-                            const pStr = pDate ? ` - Pickup ${pDate}${pTime}` : "";
-                            handleCopyPosFormat(`Express#${item.expressNumber} by ${item.staffName || "Staff"} - ${item.customerName}${pStr}`);
-                          }}
-                          className="h-7 px-2 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted gap-1"
-                          title="Salin Format POS Kasir"
-                        >
-                          <Copy className="size-3" /> Salin
-                        </Button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="icon-lg"
+                            onClick={() => handleReprint(item)}
+                            className=" text-[11px] font-medium text-foreground hover:bg-muted gap-1"
+                            title="Print Ulang"
+                          >
+                            <Printer className="size-3.5" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon-lg"
+                            onClick={() => {
+                              const pDate = item.pickupDate ? formatDisplayDate(item.pickupDate) : "";
+                              const pTime = item.pickupTime ? ` ${item.pickupTime}` : "";
+                              const pStr = pDate ? ` - Pickup ${pDate}${pTime}` : "";
+                              handleCopyPosFormat(`Express#${item.expressNumber} by ${item.staffName || "Staff"} - ${item.customerName}${pStr}`);
+                            }}
+                            className=" text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted gap-1"
+                            title="Salin untuk customer note"
+                          >
+                            <Copy className="size-3.5" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
                   {history.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="py-12 text-center text-muted-foreground">
+                      <td colSpan={9} className="py-12 text-center text-muted-foreground">
                         <div className="flex flex-col items-center justify-center space-y-1.5">
                           <div className="size-10 rounded-full bg-muted/40 flex items-center justify-center mb-1 text-muted-foreground/60">
                             <Clock className="size-5" />
@@ -1005,7 +1196,7 @@ export default function CmdPage() {
                   )}
                   {history.length > 0 && filteredHistory.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="py-10 text-center text-muted-foreground italic">
+                      <td colSpan={9} className="py-10 text-center text-muted-foreground italic">
                         Tidak ada data pesanan yang cocok dengan pencarian "{searchQuery}"
                       </td>
                     </tr>
