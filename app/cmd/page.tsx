@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/client";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,6 +31,7 @@ import {
   ChevronDown,
   Check,
   ChevronsUpDown,
+  Copy,
 } from "lucide-react";
 import {
   Command,
@@ -59,6 +62,7 @@ export type CmdHistoryItem = {
   pickupDate: string;
   pickupTime: string;
   staffName: string;
+  notes?: string;
   printedTime: string;
 };
 
@@ -246,56 +250,119 @@ export default function CmdPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [savedStaffs, setSavedStaffs] = useState<string[]>([]);
+  const [copiedPos, setCopiedPos] = useState(false);
 
   useEffect(() => {
     generateNewTicketId();
     const today = getLocalDateString();
     setPickupDate(today);
 
-    // Auto-reset Express counter & history per day via localStorage
-    try {
-      const savedDate = localStorage.getItem("cmd_express_date");
-      const savedCount = localStorage.getItem("cmd_express_count");
-      const savedHistory = localStorage.getItem("cmd_express_history");
+    const supabase = createClient();
 
-      if (savedDate !== today) {
-        localStorage.setItem("cmd_express_date", today);
-        localStorage.setItem("cmd_express_count", "1");
-        localStorage.removeItem("cmd_express_history");
-        setExpressNumber(1);
-        setHistory([]);
-      } else {
-        if (savedCount) {
-          setExpressNumber(parseInt(savedCount, 10) || 1);
+    async function loadHistory() {
+      try {
+        const { data, error } = await supabase
+          .from("cmd_express_history")
+          .select("*")
+          .gte("created_at", `${today}T00:00:00.000Z`)
+          .order("express_number", { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          const mapped: CmdHistoryItem[] = data.map((row) => ({
+            id: row.id,
+            expressNumber: row.express_number,
+            customerName: row.customer_name,
+            items: row.items || [],
+            totalQty: row.total_qty,
+            pickupDate: row.pickup_date,
+            pickupTime: row.pickup_time,
+            staffName: row.staff_name,
+            notes: row.notes || undefined,
+            printedTime: row.printed_time,
+          }));
+          setHistory(mapped);
+          const maxNum = Math.max(...mapped.map((m) => m.expressNumber));
+          setExpressNumber(maxNum + 1);
+          return;
         }
-        if (savedHistory) {
-          setHistory(JSON.parse(savedHistory));
-        }
+      } catch (err) {
+        console.warn("Supabase fetch fallback to local:", err);
       }
 
+      // Fallback to localStorage
+      try {
+        const savedDate = localStorage.getItem("cmd_express_date");
+        const savedCount = localStorage.getItem("cmd_express_count");
+        const savedHistory = localStorage.getItem("cmd_express_history");
+
+        if (savedDate !== today) {
+          localStorage.setItem("cmd_express_date", today);
+          localStorage.setItem("cmd_express_count", "1");
+          localStorage.removeItem("cmd_express_history");
+          setExpressNumber(1);
+          setHistory([]);
+        } else {
+          if (savedCount) setExpressNumber(parseInt(savedCount, 10) || 1);
+          if (savedHistory) setHistory(JSON.parse(savedHistory));
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    loadHistory();
+
+    // Supabase Realtime Subscription
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      channel = supabase
+        .channel("cmd_express_changes")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "cmd_express_history" },
+          (payload) => {
+            const row = payload.new;
+            const mappedItem: CmdHistoryItem = {
+              id: row.id,
+              expressNumber: row.express_number,
+              customerName: row.customer_name,
+              items: row.items || [],
+              totalQty: row.total_qty,
+              pickupDate: row.pickup_date,
+              pickupTime: row.pickup_time,
+              staffName: row.staff_name,
+              notes: row.notes || undefined,
+              printedTime: row.printed_time,
+            };
+            setHistory((prev) => {
+              if (prev.some((h) => h.id === mappedItem.id)) return prev;
+              return [mappedItem, ...prev];
+            });
+            setExpressNumber((prev) => Math.max(prev, row.express_number + 1));
+          }
+        )
+        .subscribe();
+    } catch {
+      // ignore
+    }
+
+    try {
       const storedStaffs = localStorage.getItem("cmd_saved_staffs");
       if (storedStaffs) {
         setSavedStaffs(JSON.parse(storedStaffs));
       } else {
-        setSavedStaffs(["Angga",
-          "Ari",
-          "Avita",
-          "Dek Run",
-          "Evita",
-          "Gus De",
-          "Haga",
-          "Ivanna",
-          "Merry",
-          "Nita",
-          "Nyom",
-          "Ocha",
-          "Rama",
-          "Siyut",
-          "Yayuk"]);
+        setSavedStaffs([
+          "Angga", "Ari", "Avita", "Dek Run", "Evita", "Gus De", "Haga",
+          "Ivanna", "Merry", "Nita", "Nyom", "Ocha", "Rama", "Siyut", "Yayuk"
+        ]);
       }
     } catch {
       // ignore
     }
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
   }, []);
 
   function generateNewTicketId() {
@@ -348,7 +415,8 @@ export default function CmdPage() {
     toast.success("Form di-reset", { position: "top-center" });
   }
 
-  function handlePrint() {
+  async function handlePrint() {
+
     if (totalQty === 0) {
       toast.error("Mohon atur jumlah barang minimal 1 pcs", { position: "top-center" });
       return;
@@ -379,11 +447,41 @@ export default function CmdPage() {
       pickupDate,
       pickupTime,
       staffName: staffName.trim(),
+      notes: notes.trim() || undefined,
       printedTime: printedTimeStr,
     };
 
     const newHistory = [newItem, ...history];
     setHistory(newHistory);
+
+    // Insert into Supabase
+    const supabase = createClient();
+    try {
+      const { data, error } = await supabase
+        .from("cmd_express_history")
+        .insert([
+          {
+            express_number: currentExpress,
+            customer_name: customerName.trim(),
+            customer_phone: customerPhone.trim() || null,
+            staff_name: staffName.trim(),
+            items: activeItems,
+            total_qty: totalQty,
+            pickup_date: pickupDate,
+            pickup_time: pickupTime,
+            notes: notes.trim() || null,
+            printed_time: printedTimeStr,
+          },
+        ])
+        .select()
+        .single();
+
+      if (data && !error) {
+        newItem.id = data.id;
+      }
+    } catch (err) {
+      console.warn("Supabase insert warning:", err);
+    }
 
     // Save staff name to suggestions
     const trimmedStaff = staffName.trim();
@@ -426,6 +524,22 @@ export default function CmdPage() {
     } catch {
       return dateStr;
     }
+  };
+
+  const pickupFormatted = pickupDate
+    ? `${formatDisplayDate(pickupDate)}${pickupTime ? ` ${pickupTime}` : ""}`
+    : "";
+
+  const posFormatString = `Express#${expressNumber} by ${staffName.trim() || "Staff"} - ${customerName.trim() || "Customer"}${pickupFormatted ? ` - Pickup ${pickupFormatted}` : ""}`;
+
+  const handleCopyPosFormat = (str?: string) => {
+    const textToCopy = str || posFormatString;
+    navigator.clipboard.writeText(textToCopy);
+    setCopiedPos(true);
+    toast.success("Format POS kasir disalin!", {
+      description: textToCopy,
+    });
+    setTimeout(() => setCopiedPos(false), 2000);
   };
 
   const filteredHistory = history
@@ -808,47 +922,79 @@ export default function CmdPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left border-collapse">
                 <thead>
-                  <tr className="border-y border-border/60 bg-muted/20 text-[11px] text-muted-foreground font-normal">
-                    <th className="py-2.5 px-6 font-normal">Nama</th>
-                    <th className="py-2.5 px-4 font-normal">No</th>
+                  <tr className="border-y border-border/60 bg-muted/20 text-[11px] text-muted-foreground font-normal whitespace-nowrap">
+                    <th className="py-2.5 px-6 font-normal">No</th>
+                    <th className="py-2.5 px-4 font-normal">Nama Cust</th>
                     <th className="py-2.5 px-4 font-normal">Item Custom</th>
                     <th className="py-2.5 px-4 font-normal">Pickup</th>
                     <th className="py-2.5 px-4 font-normal">Staff</th>
-                    <th className="py-2.5 px-6 font-normal text-right">Waktu Cetak</th>
+                    <th className="py-2.5 px-4 font-normal text-right">Waktu Cetak</th>
+                    <th className="py-2.5 px-4 font-normal">Customer Note</th>
+                    <th className="py-2.5 px-6 font-normal text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/40">
                   {filteredHistory.map((item) => (
                     <tr key={item.id} className="hover:bg-muted/20 transition-colors">
-                      <td className="py-3 px-6 font-semibold capitalize text-foreground">
-                        {item.customerName}
-                      </td>
-                      <td className="py-3 px-4 font-semibold text-xs">
+                      <td className="py-3 px-6 font-semibold text-xs text-foreground whitespace-nowrap">
                         Express#{item.expressNumber}
+                      </td>
+                      <td className="py-3 px-4 font-semibold capitalize text-foreground whitespace-nowrap">
+                        {item.customerName}
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex flex-wrap gap-1">
                           {item.items.map((it, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-[10px] font-medium bg-muted/60 text-foreground border-border/40">
+                            <Badge key={idx} variant="secondary" className="text-[10px] font-medium bg-muted/60 text-foreground border-border/40 whitespace-nowrap">
                               {it.name} (x{it.qty})
                             </Badge>
                           ))}
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-foreground font-medium">
-                        {formatDisplayDate(item.pickupDate)} {item.pickupTime && `(${item.pickupTime})`}
+                      <td className="py-3 px-4 text-foreground font-medium whitespace-nowrap">
+                        <div className="flex flex-col text-xs leading-tight">
+                          <span>{formatDisplayDate(item.pickupDate)}</span>
+                          {item.pickupTime && (
+                            <span className="text-[11px] text-muted-foreground font-normal mt-0.5">
+                              {item.pickupTime}
+                            </span>
+                          )}
+                        </div>
                       </td>
-                      <td className="py-3 px-4 text-muted-foreground capitalize">
+                      <td className="py-3 px-4 text-muted-foreground capitalize whitespace-nowrap">
                         {item.staffName || "-"}
                       </td>
-                      <td className="py-3 px-6 text-right text-muted-foreground font-mono text-[11px]">
+                      <td className="py-3 px-4 text-right text-muted-foreground font-mono text-[11px] whitespace-nowrap">
                         {item.printedTime}
+                      </td>
+                      <td className="py-3 px-4 text-xs text-foreground leading-snug whitespace-pre-wrap break-words max-w-[200px]">
+                        {item.notes ? (
+                          <span>{item.notes}</span>
+                        ) : (
+                          <span className="text-muted-foreground/40 italic text-[11px]">-</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-6 text-right whitespace-nowrap">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const pDate = item.pickupDate ? formatDisplayDate(item.pickupDate) : "";
+                            const pTime = item.pickupTime ? ` ${item.pickupTime}` : "";
+                            const pStr = pDate ? ` - Pickup ${pDate}${pTime}` : "";
+                            handleCopyPosFormat(`Express#${item.expressNumber} by ${item.staffName || "Staff"} - ${item.customerName}${pStr}`);
+                          }}
+                          className="h-7 px-2 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted gap-1"
+                          title="Salin Format POS Kasir"
+                        >
+                          <Copy className="size-3" /> Salin
+                        </Button>
                       </td>
                     </tr>
                   ))}
                   {history.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="py-12 text-center text-muted-foreground">
+                      <td colSpan={8} className="py-12 text-center text-muted-foreground">
                         <div className="flex flex-col items-center justify-center space-y-1.5">
                           <div className="size-10 rounded-full bg-muted/40 flex items-center justify-center mb-1 text-muted-foreground/60">
                             <Clock className="size-5" />
@@ -861,7 +1007,7 @@ export default function CmdPage() {
                   )}
                   {history.length > 0 && filteredHistory.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="py-10 text-center text-muted-foreground italic">
+                      <td colSpan={8} className="py-10 text-center text-muted-foreground italic">
                         Tidak ada data pesanan yang cocok dengan pencarian "{searchQuery}"
                       </td>
                     </tr>

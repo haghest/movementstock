@@ -123,38 +123,37 @@
         -ms-overflow-style: none;
         scrollbar-width: none;
     }
+
     *::-webkit-scrollbar {
         display: none;
     }
+
     input::placeholder,
     textarea::placeholder {
         font-size: inherit;
     }
+
     body {
         @apply bg-background text-foreground;
     }
+
     html {
         @apply font-sans;
     }
 }
 
 @media print {
-    @page {
-        size: 58mm auto;
-        margin: 0;
-    }
-
-    html, body {
-        height: auto !important;
-        min-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
+    body {
         background: white !important;
         color: black !important;
-        overflow: visible !important;
     }
 
-    .fixed, .no-print {
+    body * {
+        visibility: hidden !important;
+    }
+
+    .fixed,
+    .no-print {
         display: none !important;
     }
 
@@ -162,11 +161,8 @@
         display: block !important;
     }
 
-    body * {
-        visibility: hidden !important;
-    }
-
-    #thermal-receipt, #thermal-receipt * {
+    #thermal-receipt,
+    #thermal-receipt * {
         visibility: visible !important;
     }
 
@@ -176,19 +172,17 @@
         left: 0 !important;
         top: 0 !important;
         width: 100% !important;
-        max-width: 58mm !important;
+        max-width: 100% !important;
         margin: 0 !important;
-        padding: 6px 4px !important;
+        padding: 8px 4px !important;
         box-shadow: none !important;
         border: none !important;
         background: white !important;
         color: black !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-        page-break-after: avoid !important;
-        break-after: avoid !important;
+    }
+
+    @page {
+        margin: 0;
+        size: auto;
     }
 }
-
-
-
