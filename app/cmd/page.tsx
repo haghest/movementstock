@@ -27,7 +27,18 @@ import {
   ArrowUpDown,
   SlidersHorizontal,
   ChevronDown,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
+import {
+  Command,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 
 export const BAG_ITEMS = [
   "Mini Backpack 15L",
@@ -79,7 +90,7 @@ function DatePickerPopover({
   const displayDateText = selectedDate
     ? selectedDate.toLocaleDateString("id-ID", {
       day: "numeric",
-      month: "short",
+      month: "long",
       year: "numeric",
     })
     : "Pilih tanggal";
@@ -89,7 +100,7 @@ function DatePickerPopover({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="w-full justify-between px-2.5 border-input bg-background text-foreground"
+          className="w-full justify-between h-8 text-xs px-2.5 border-input bg-background text-foreground"
         >
           <span className="truncate">{displayDateText}</span>
           <ChevronDown className="size-3.5 text-muted-foreground shrink-0 ml-1" />
@@ -110,6 +121,93 @@ function DatePickerPopover({
             setOpen(false);
           }}
         />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function StaffCombobox({
+  value,
+  onChange,
+  staffList,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  staffList: string[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  const selectedName = value.trim();
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between h-8  px-2.5 font-normal border-input bg-background text-foreground"
+        >
+          <span className="truncate">
+            {selectedName || "Nama Staff"}
+          </span>
+          <ChevronsUpDown className="ml-1 size-3.5 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-52 p-0" align="start">
+        <Command>
+          <CommandInput
+            placeholder="Cari atau ketik staff..."
+            value={query}
+            onValueChange={(val) => {
+              setQuery(val);
+              onChange(val);
+            }}
+            className="h-8 text-xs"
+          />
+          <CommandList className="max-h-52 overflow-y-auto">
+            {query.trim() && !staffList.some((s) => s.toLowerCase() === query.trim().toLowerCase()) && (
+              <div className="p-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange(query.trim());
+                    setOpen(false);
+                  }}
+                  className="w-full text-left px-2 py-1.5 hover:bg-muted rounded-sm text-xs text-primary font-semibold flex items-center justify-between"
+                >
+                  <span>Gunakan "{query.trim()}"</span>
+                  <Plus className="size-3" />
+                </button>
+              </div>
+            )}
+            <CommandEmpty className="py-2 text-center text-xs text-muted-foreground">
+              {query.trim() ? "Tekan tombol untuk memilih" : "Belum ada nama staff"}
+            </CommandEmpty>
+            <CommandGroup>
+              {staffList.map((name) => (
+                <CommandItem
+                  key={name}
+                  value={name}
+                  onSelect={() => {
+                    onChange(name);
+                    setOpen(false);
+                  }}
+                  className="text-xs py-1.5 flex items-center justify-between cursor-pointer"
+                >
+                  <span>{name}</span>
+                  <Check
+                    className={cn(
+                      "size-3.5",
+                      selectedName.toLowerCase() === name.toLowerCase() ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
       </PopoverContent>
     </Popover>
   );
@@ -141,13 +239,13 @@ export default function CmdPage() {
   const [notes, setNotes] = useState("");
 
   // UI / Print States
-  const [paperSize, setPaperSize] = useState<"58mm" | "80mm">("58mm");
   const [ticketId, setTicketId] = useState("");
   const [createdTime, setCreatedTime] = useState("");
   const [expressNumber, setExpressNumber] = useState<number>(1);
   const [history, setHistory] = useState<CmdHistoryItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [savedStaffs, setSavedStaffs] = useState<string[]>([]);
 
   useEffect(() => {
     generateNewTicketId();
@@ -173,6 +271,27 @@ export default function CmdPage() {
         if (savedHistory) {
           setHistory(JSON.parse(savedHistory));
         }
+      }
+
+      const storedStaffs = localStorage.getItem("cmd_saved_staffs");
+      if (storedStaffs) {
+        setSavedStaffs(JSON.parse(storedStaffs));
+      } else {
+        setSavedStaffs(["Angga",
+          "Ari",
+          "Avita",
+          "Dek Run",
+          "Evita",
+          "Gus De",
+          "Haga",
+          "Ivanna",
+          "Merry",
+          "Nita",
+          "Nyom",
+          "Ocha",
+          "Rama",
+          "Siyut",
+          "Yayuk"]);
       }
     } catch {
       // ignore
@@ -266,6 +385,18 @@ export default function CmdPage() {
     const newHistory = [newItem, ...history];
     setHistory(newHistory);
 
+    // Save staff name to suggestions
+    const trimmedStaff = staffName.trim();
+    if (trimmedStaff && !savedStaffs.some((s) => s.toLowerCase() === trimmedStaff.toLowerCase())) {
+      const updatedStaffs = [trimmedStaff, ...savedStaffs];
+      setSavedStaffs(updatedStaffs);
+      try {
+        localStorage.setItem("cmd_saved_staffs", JSON.stringify(updatedStaffs));
+      } catch {
+        // ignore
+      }
+    }
+
     try {
       const today = getLocalDateString();
       localStorage.setItem("cmd_express_date", today);
@@ -339,8 +470,8 @@ export default function CmdPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
-                    className="h-6 w-6 p-0"
+                    size="icon-sm"
+
                     onClick={() => {
                       const newNum = Math.max(1, expressNumber - 1);
                       setExpressNumber(newNum);
@@ -355,8 +486,7 @@ export default function CmdPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
-                    className="h-6 w-6 p-0"
+                    size="icon-sm"
                     onClick={() => {
                       const newNum = expressNumber + 1;
                       setExpressNumber(newNum);
@@ -380,19 +510,19 @@ export default function CmdPage() {
                   Item
                 </label>
                 <Badge variant={totalQty > 0 ? "default" : "outline"} className="text-[11px]">
-                  QYT: {totalQty} pcs
+                  QYT {totalQty} pcs
                 </Badge>
               </div>
 
-              <div className="space-y-3 md:space-y-1.5">
+              <div className="space-y-3 md:space-y-2">
                 {BAG_ITEMS.map((bag) => {
                   const qty = quantities[bag];
                   const isSelected = qty > 0;
                   return (
                     <div
                       key={bag}
-                      className={`flex items-center justify-between border p-2 rounded-lg transition-all ${isSelected
-                        ? "bg-background border border-primary/40"
+                      className={`flex items-center  font-medium justify-between border p-2 rounded-lg transition-all ${isSelected
+                        ? "bg-accent border "
                         : "hover:bg-muted/50 border border-transparent"
                         }`}
                     >
@@ -429,7 +559,7 @@ export default function CmdPage() {
             </div>
 
             {/* 2. CUSTOMER & STAFF */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-muted-foreground">
                   Nama Customer *
@@ -447,12 +577,10 @@ export default function CmdPage() {
                 <label className="text-xs font-semibold text-muted-foreground">
                   Nama Staff *
                 </label>
-                <Input
-                  type="text"
-                  placeholder="Nama Staff"
+                <StaffCombobox
                   value={staffName}
-                  onChange={(e) => setStaffName(e.target.value)}
-                  className="h-8 text-xs"
+                  onChange={setStaffName}
+                  staffList={savedStaffs}
                 />
               </div>
             </div>
@@ -462,7 +590,7 @@ export default function CmdPage() {
               <label className="text-xs font-semibold text-muted-foreground">
                 Tanggal Pickup
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-4">
                 <DatePickerPopover
                   dateStr={pickupDate}
                   onSelectDate={(val) => setPickupDate(val)}
@@ -472,10 +600,10 @@ export default function CmdPage() {
                   id="time-picker-optional"
                   value={pickupTime}
                   onChange={(e) => setPickupTime(e.target.value)}
-                  className="appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+                  className="appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none text-xs"
                 />
               </div>
-              <div className="flex gap-1 pt-0.5">
+              <div className="flex gap-1 pt-1">
                 {PRESET_TIMES.map((time) => (
                   <Badge
                     key={time}
@@ -527,48 +655,23 @@ export default function CmdPage() {
             <CardTitle className="text-base flex items-center gap-2">
               Preview
             </CardTitle>
-
-            {/* Paper Size Switcher */}
-            <div className="flex items-center bg-muted p-0.5 rounded-md border border-border/80 text-[11px]">
-              <button
-                type="button"
-                onClick={() => setPaperSize("58mm")}
-                className={`px-2.5 py-0.5 rounded-sm font-semibold transition-all ${paperSize === "58mm"
-                  ? "bg-background text-foreground shadow-2xs"
-                  : "text-muted-foreground hover:text-foreground"
-                  }`}
-              >
-                58mm
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaperSize("80mm")}
-                className={`px-2.5 py-0.5 rounded-sm font-semibold transition-all ${paperSize === "80mm"
-                  ? "bg-background text-foreground shadow-2xs"
-                  : "text-muted-foreground hover:text-foreground"
-                  }`}
-              >
-                80mm
-              </button>
-            </div>
           </CardHeader>
-          <CardContent className="p-6 flex justify-center items-start bg-muted/20 overflow-y-auto max-h-[calc(100vh-160px)] rounded-b-xl">
+          <CardContent className="p-4 flex justify-center items-start  overflow-y-auto max-h-[calc(100vh-160px)] rounded-b-xl">
             {/* Actual Thermal Receipt Layout */}
             <div
               id="thermal-receipt"
               style={{
-                width: paperSize === "58mm" ? "210px" : "280px",
+                width: "210px",
               }}
-              className="bg-white text-black p-3.5 rounded shadow-md border border-neutral-300 text-xs leading-snug select-none"
+              className="bg-white text-black p-3.5  shadow-lg border border-neutral-300 text-xs leading-snug select-none"
             >
               {/* Header Logo */}
               <div className="text-center border-black border-dashed flex flex-col items-center">
                 <img
                   src="/tttm.jpg"
                   alt="Ticket to the Moon Logo"
-                  className="h-10 w-auto mx-auto mb-1 object-contain mix-blend-multiply"
+                  className="h-auto w-full mx-auto mb-1 object-contain mix-blend-multiply"
                 />
-
                 <p className="font-semibold text-lg py-1 inline-block font-mono">
                   Express #{expressNumber}
                 </p>
@@ -577,7 +680,7 @@ export default function CmdPage() {
 
 
               {/* PICKUP BADGE */}
-              <div className="my-2 text-center border-t border-black border-dashed pt-2">
+              <div className=" text-center border-t border-black border-dashed pt-2">
                 <p className="text-[10px] uppercase font-bold text-neutral-600 tracking-wider">
                   Tanggal Pickup
                 </p>
@@ -613,10 +716,10 @@ export default function CmdPage() {
                     activeItems.map((item) => (
                       <div
                         key={item.name}
-                        className="flex justify-between items-center font-semibold text-xs  "
+                        className="flex justify-between items-center font-medium text-xs  "
                       >
                         <span>{item.name}</span>
-                        <span className="text-xs font-mono">
+                        <span className="font-mono">
                           x{item.qty}
                         </span>
                       </div>
@@ -635,7 +738,7 @@ export default function CmdPage() {
                   <p className="text-[9px] font-bold text-neutral-600 uppercase mb-0.5">
                     NOTES:
                   </p>
-                  <p className="text-xs leading-snug whitespace-pre-wrap break-all max-w-full">
+                  <p className="text-xs leading-snug whitespace-pre-wrap break-words max-w-full">
                     {notes}
                   </p>
                 </div>
@@ -650,7 +753,7 @@ export default function CmdPage() {
                 />
               </div>
               {/* Timestamp */}
-              <div className="py-1  border-black border-dashed text-center text-[10px] text-neutral-600">
+              <div className="py-1 text-center text-[10px] text-neutral-600">
                 <span>{createdTime || "TODAY"}</span>
               </div>
             </div>
@@ -701,7 +804,6 @@ export default function CmdPage() {
               </div>
             </div>
           </CardHeader>
-
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left border-collapse">

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PackageCheck, ShoppingCart, SwatchBook, Ticket } from "lucide-react";
+import { PackageCheck, SwatchBook } from "lucide-react";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 export function Navbar() {
@@ -23,7 +24,7 @@ export function Navbar() {
 
   return (
     <header className="w-full py-4 no-print flex justify-center">
-      <nav className="flex items-center gap-1 bg-muted/60 p-1 rounded-xl border  text-xs">
+      <nav className="flex items-center gap-1 bg-muted/60 p-1 rounded-xl border text-xs">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
@@ -32,14 +33,21 @@ export function Navbar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-semibold transition-all select-none text-xs",
+                "relative flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors select-none",
                 isActive
-                  ? "bg-background text-foreground shadow-2xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                  ? "text-white"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <Icon className="size-3.5" />
-              <span>{item.name}</span>
+              {isActive && (
+                <motion.div
+                  layoutId="active-nav-pill"
+                  className="absolute inset-0 bg-black rounded-lg shadow-2xs"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+              <Icon className="relative z-10 size-3.5" />
+              <span className="relative z-10">{item.name}</span>
             </Link>
           );
         })}
@@ -47,3 +55,4 @@ export function Navbar() {
     </header>
   );
 }
+
