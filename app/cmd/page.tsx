@@ -876,7 +876,7 @@ export default function CmdPage() {
       </div>
 
       {/* TODAY'S EXPRESS HISTORY TABLE (NOTION STYLE - no-print) */}
-      <section className="mt-8 no-print">
+      <section className="mt-6 no-print">
         <Card className=" overflow-hidden bg-background">
           <CardHeader>
             {/* Title Row */}
