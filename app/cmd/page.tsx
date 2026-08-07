@@ -536,9 +536,7 @@ export default function CmdPage() {
     const textToCopy = str || posFormatString;
     navigator.clipboard.writeText(textToCopy);
     setCopiedPos(true);
-    toast.success("Format POS kasir disalin!", {
-      description: textToCopy,
-    });
+    toast.success("Customer note disalin!", { position: "top-center" });
     setTimeout(() => setCopiedPos(false), 2000);
   };
 
