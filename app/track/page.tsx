@@ -225,7 +225,7 @@ function TrackContent() {
     {
       id: "completed",
       title: "Order Completed",
-      desc: "The bag has been picked up & delivered to the customer.",
+      desc: "The bag has been picked up by the customer.",
       icon: PackageCheck,
     },
   ];
@@ -243,12 +243,9 @@ function TrackContent() {
       {/* Header Brand */}
       <div className="w-full max-w-lg flex flex-col items-center mb-6 text-center space-y-2">
         <div className="flex items-center gap-2">
-          <img src="/tttm.jpg" alt="TTTM Logo" className="h-9 w-auto " />
+          <img src="/tttm_wordmark_dark.png" alt="TTTM Logo" className="h-7 w-auto" />
         </div>
-        <h1 className="text-xl font-bold tracking-tight">Custom Express Tracking</h1>
-        <p className="text-xs text-muted-foreground">
-          Track your custom bag order status in real-time.
-        </p>
+        {/* <h1 className="text-xl font-bold tracking-tight">Custom Express Tracking</h1> */}
       </div>
 
       {/* Search Input Bar */}
@@ -264,13 +261,13 @@ function TrackContent() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Enter Tracking Code (e.g. EX260807-01) or Name"
+              placeholder="Enter Tracking Code (e.g. EX26XXXX-XX)"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="pl-9 text-xs h-10 bg-background shadow-xs rounded-xl"
+              className="pl-9 text-xs h-10 bg-background shadow-xs"
             />
           </div>
-          <Button type="submit" size="default" className="h-10 px-4 text-xs font-semibold rounded-xl shrink-0">
+          <Button type="submit" size="default" className="h-10 px-4 text-xs font-semibold shrink-0">
             Track Order
           </Button>
         </form>
@@ -384,18 +381,28 @@ function TrackContent() {
                           key={step.id}
                           className="relative z-10 flex items-start gap-4"
                         >
-                          <div
-                            className={cn(
-                              "flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold shadow-xs transition-colors",
-                              isCurrent &&
-                              "bg-primary text-primary-foreground ring-4 ring-primary/20",
-                              isPassed &&
-                              !isCurrent &&
-                              "bg-emerald-600 text-white",
-                              !isPassed && "bg-muted text-muted-foreground"
+                          <div className="relative flex size-8 shrink-0 items-center justify-center">
+                            {isCurrent && (
+                              <motion.span
+                                animate={{ scale: [1, 1.35, 1], opacity: [0.25, 0.65, 0.25] }}
+                                transition={{
+                                  duration: 2,
+                                  repeat: Infinity,
+                                  ease: "easeInOut",
+                                }}
+                                className="absolute inset-0 rounded-full bg-neutral-500/50"
+                              />
                             )}
-                          >
-                            <Icon className="size-4" />
+                            <div
+                              className={cn(
+                                "relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold shadow-xs transition-colors",
+                                isCurrent && "bg-primary text-primary-foreground",
+                                isPassed && !isCurrent && "bg-emerald-600 text-white",
+                                !isPassed && "bg-muted text-muted-foreground"
+                              )}
+                            >
+                              <Icon className="size-4" />
+                            </div>
                           </div>
 
                           <div className="space-y-0.5">
@@ -465,7 +472,7 @@ function TrackContent() {
                         Total Items
                       </p>
                       <p className="text-xs font-semibold">
-                        {activeOrder.totalQty} Pcs
+                        {activeOrder.totalQty} PCS
                       </p>
                     </div>
                   </div>
@@ -503,7 +510,7 @@ function TrackContent() {
                     target="_blank"
                     rel="noreferrer"
                   >
-                    <MessageCircle className="size-4 text-emerald-600 dark:text-emerald-400" /> WhatsApp Us
+                    <MessageCircle className="size-4 " /> WhatsApp
                   </a>
                 </Button>
                 <Button variant="outline" className="gap-2" asChild>
@@ -514,7 +521,7 @@ function TrackContent() {
                       `Hello Ticket to the Moon Store,\n\nI would like to inquire about my Custom Express order #${activeOrder.expressNumber} (${activeOrder.trackingCode || ""}) under the name ${activeOrder.customerName}.\n\nThank you.`
                     )}`}
                   >
-                    <Mail className="size-4 text-blue-600 dark:text-blue-400" /> Email Us
+                    <Mail className="size-4" /> Email
                   </a>
                 </Button>
               </div>

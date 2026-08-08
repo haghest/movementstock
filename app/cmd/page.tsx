@@ -237,6 +237,21 @@ function generateTrackingCode(expressNum: number, dateObj: Date = new Date()) {
   return `EX${yy}${mm}${dd}-${numStr}`;
 }
 
+function formatFullDisplayDate(dateStr?: string) {
+  if (!dateStr) return "-";
+  try {
+    const d = new Date(dateStr.includes("T") ? dateStr : dateStr + "T00:00:00");
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
 function formatTimestamp(isoOrText?: string) {
   if (!isoOrText) return "-";
   try {
@@ -304,6 +319,7 @@ export default function CmdPage() {
   const [history, setHistory] = useState<CmdHistoryItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [historyDateFilter, setHistoryDateFilter] = useState<string>(getLocalDateString());
   const [savedStaffs, setSavedStaffs] = useState<string[]>([]);
   const [copiedPos, setCopiedPos] = useState(false);
   const [origin, setOrigin] = useState("");
@@ -321,13 +337,28 @@ export default function CmdPage() {
 
     async function loadHistory() {
       try {
-        const { data, error } = await supabase
-          .from("cmd_express_history")
-          .select("*")
-          .gte("created_at", `${today}T00:00:00.000Z`)
-          .order("express_number", { ascending: false });
+        let queryBuilder = supabase.from("cmd_express_history").select("*");
 
-        if (!error && data && data.length > 0) {
+        if (historyDateFilter === "all") {
+          queryBuilder = queryBuilder.order("created_at", { ascending: false });
+        } else {
+          // Convert local start-of-day and end-of-day to UTC ISO strings for Supabase query
+          const [year, month, day] = historyDateFilter.split("-").map(Number);
+          const startLocal = new Date(year, month - 1, day, 0, 0, 0, 0);
+          const endLocal = new Date(year, month - 1, day, 23, 59, 59, 999);
+
+          const startIso = startLocal.toISOString();
+          const endIso = endLocal.toISOString();
+
+          queryBuilder = queryBuilder
+            .gte("created_at", startIso)
+            .lte("created_at", endIso)
+            .order("express_number", { ascending: false });
+        }
+
+        const { data, error } = await queryBuilder;
+
+        if (!error && data) {
           const mapped: CmdHistoryItem[] = data.map((row) => ({
             id: row.id,
             expressNumber: row.express_number,
@@ -344,16 +375,25 @@ export default function CmdPage() {
             printedTime: formatTimestamp(row.created_at || row.printed_time),
           }));
           setHistory(mapped);
-          const maxNum = Math.max(...mapped.map((m) => m.expressNumber));
-          setExpressNumber(maxNum + 1);
+
+          // Update expressNumber counter ONLY if viewing today's history
+          if (historyDateFilter === today) {
+            if (mapped.length > 0) {
+              const maxNum = Math.max(...mapped.map((m) => m.expressNumber));
+              setExpressNumber(maxNum + 1);
+            } else {
+              setExpressNumber(1);
+            }
+          }
         } else {
           setHistory([]);
-          setExpressNumber(1);
+          if (historyDateFilter === today) {
+            setExpressNumber(1);
+          }
         }
       } catch (err) {
         console.warn("Supabase fetch error:", err);
         setHistory([]);
-        setExpressNumber(1);
       }
     }
 
@@ -404,7 +444,7 @@ export default function CmdPage() {
     return () => {
       if (channel) supabase.removeChannel(channel);
     };
-  }, []);
+  }, [historyDateFilter]);
 
   function generateNewTicketId() {
     const now = new Date();
@@ -920,10 +960,10 @@ export default function CmdPage() {
               {/* PICKUP BADGE */}
               <div className=" text-center border-t border-black border-dashed pt-2">
                 <p className="text-[10px] uppercase font-bold text-neutral-600 tracking-wider">
-                  Tanggal Pickup
+                  Pickup Date
                 </p>
                 <p className="text-xs font-bold mt-0.5 text-black">
-                  {formatDisplayDate(pickupDate)}
+                  {formatFullDisplayDate(pickupDate)}
                 </p>
                 <p className="text-[11px] font-bold text-neutral-900">
                   {pickupTime || "-"}
@@ -984,18 +1024,18 @@ export default function CmdPage() {
               {/* Tracking QR Code */}
               <div className="pt-2 pb-1 text-center flex flex-col items-center space-y-0.5">
                 <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
                     origin
                       ? `${origin}/track?id=${ticketId || generateTrackingCode(expressNumber)}`
-                      : `https://moon-stock-parser.vercel.app/track?id=${ticketId || generateTrackingCode(expressNumber)}`
+                      : `https://tttm.haga.my.id/track?id=${ticketId || generateTrackingCode(expressNumber)}`
                   )}`}
                   alt="Scan untuk tracking pesanan"
-                  className="w-24 h-24 aspect-square object-contain mix-blend-multiply mx-auto"
+                  className="w-full aspect-square object-contain mix-blend-multiply mx-auto"
                 />
                 <p className="text-[9px] font-mono text-neutral-900 font-bold uppercase tracking-tight pt-0.5">
                   Tracking Code: {ticketId || generateTrackingCode(expressNumber)}
                 </p>
-                <p className="text-[8px] font-mono text-neutral-600 font-semibold uppercase tracking-tight">
+                <p className="text-[10px] font-mono text-neutral-600 font-semibold uppercase tracking-tight">
                   Scan to Track Bag Status
                 </p>
               </div>
@@ -1008,30 +1048,76 @@ export default function CmdPage() {
         </Card>
       </div>
 
-      {/* TODAY'S EXPRESS HISTORY TABLE (NOTION STYLE - no-print) */}
+      {/* TODAY'S & HISTORICAL EXPRESS TABLE */}
       <section className="mt-6 no-print">
-        <Card className=" overflow-hidden bg-background">
-          <CardHeader>
+        <Card className="overflow-hidden bg-background">
+          <CardHeader className="pb-3">
             {/* Title Row */}
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-foreground tracking-tight">
-                Express Hari Ini
-              </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-semibold text-foreground tracking-tight text-base">
+                  {historyDateFilter === getLocalDateString()
+                    ? "Express Hari Ini"
+                    : historyDateFilter === "all"
+                      ? "Semua Data Express"
+                      : `Express Tanggal ${formatDisplayDate(historyDateFilter)}`}
+                </h3>
+                {historyDateFilter !== getLocalDateString() && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setHistoryDateFilter(getLocalDateString())}
+                    className="h-6 px-2 text-[11px] text-primary hover:text-primary/80 font-medium"
+                  >
+                    (Kembali ke Hari Ini)
+                  </Button>
+                )}
+              </div>
               {history.length > 0 && (
-                <Badge variant="secondary" className="text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                <Badge variant="secondary" className="text-xs font-semibold px-2.5 py-0.5 rounded-full shrink-0">
                   {history.length} Total
                 </Badge>
               )}
             </div>
 
-            {/* Sub-bar Notion Style: Filter | Sort (Left) & Search (Right) */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {/* Sub-bar: Date Filter & Sort (Left) & Search (Right) */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                {/* Quick Filter Buttons & Custom Date Input */}
+                <div className="flex items-center gap-1.5 bg-muted/40 p-1 rounded-xl border">
+                  <Input
+                    type="date"
+                    value={historyDateFilter === "all" ? "" : historyDateFilter}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setHistoryDateFilter(e.target.value);
+                      }
+                    }}
+                    className="h-7 text-xs bg-background border shadow-2xs rounded-lg px-2 w-32 cursor-pointer"
+                  />
+                  <Button
+                    variant={historyDateFilter === getLocalDateString() ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setHistoryDateFilter(getLocalDateString())}
+                    className="h-7 px-2.5 text-xs rounded-lg font-medium"
+                  >
+                    Hari Ini
+                  </Button>
+                  <Button
+                    variant={historyDateFilter === "all" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setHistoryDateFilter("all")}
+                    className="h-7 px-2.5 text-xs rounded-lg font-medium"
+                  >
+                    Semua
+                  </Button>
+                </div>
+
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setSortOrder((prev) => (prev === "newest" ? "oldest" : "newest"))}
-                  className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1.5 hover:bg-muted/40 font-normal"
+                  className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground gap-1.5 hover:bg-muted/40 font-normal rounded-xl border border-dashed"
                 >
                   <ArrowUpDown className="size-3.5" />
                   <span>
@@ -1043,10 +1129,10 @@ export default function CmdPage() {
               <div className="relative min-w-[200px] sm:w-72">
                 <Input
                   type="text"
-                  placeholder="Search..."
+                  placeholder="Search name, express #, resi..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-
+                  className="h-8 text-xs"
                 />
               </div>
             </div>
