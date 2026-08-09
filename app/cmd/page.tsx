@@ -2,16 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/client";
+import { QRCodeSVG } from "qrcode.react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import {
   Printer,
   Clock,
   ArrowUpDown,
+  ListFilter,
+  Check,
   Copy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -40,6 +44,8 @@ export type CmdHistoryItem = {
   status?: OrderStatus;
   trackingCode?: string;
   createdAt?: string;
+  readyAt?: string;
+  completedAt?: string;
   printedTime: string;
 };
 
@@ -50,12 +56,13 @@ function getLocalDateString(d: Date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
-function generateTrackingCode(expressNum: number, dateObj: Date = new Date()) {
-  const yy = String(dateObj.getFullYear()).slice(-2);
-  const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
-  const dd = String(dateObj.getDate()).padStart(2, "0");
-  const numStr = String(expressNum).padStart(2, "0");
-  return `EX${yy}${mm}${dd}-${numStr}`;
+function generateTrackingCode(expressNum?: number, dateObj: Date = new Date()) {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let result = "";
+  for (let i = 0; i < 6; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
 }
 
 function formatFullDisplayDate(dateStr?: string) {
@@ -120,6 +127,8 @@ export default function CmdPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [historyDateFilter, setHistoryDateFilter] = useState<string>(getLocalDateString());
+  const [statusFilter, setStatusFilter] = useState<"all" | "processing" | "ready" | "completed">("all");
+  const [filterOpen, setFilterOpen] = useState(false);
   const [copiedPos, setCopiedPos] = useState(false);
   const [origin, setOrigin] = useState("");
 
@@ -171,6 +180,8 @@ export default function CmdPage() {
               row.tracking_code ||
               generateTrackingCode(row.express_number, new Date(row.created_at || Date.now())),
             createdAt: row.created_at,
+            readyAt: row.ready_at,
+            completedAt: row.completed_at,
             printedTime: formatTimestamp(row.created_at || row.printed_time),
           }));
           setHistory(mapped);
@@ -211,6 +222,8 @@ export default function CmdPage() {
                   row.tracking_code ||
                   generateTrackingCode(row.express_number, new Date(row.created_at || Date.now())),
                 createdAt: row.created_at,
+                readyAt: row.ready_at,
+                completedAt: row.completed_at,
                 printedTime: formatTimestamp(row.created_at || row.printed_time),
               };
               setHistory((prev) => {
@@ -225,11 +238,13 @@ export default function CmdPage() {
                 prev.map((h) =>
                   h.id === row.id
                     ? {
-                        ...h,
-                        status: (row.status as OrderStatus) || h.status,
-                        customerName: row.customer_name || h.customerName,
-                        staffName: row.staff_name || h.staffName,
-                      }
+                      ...h,
+                      status: (row.status as OrderStatus) || h.status,
+                      readyAt: row.ready_at || h.readyAt,
+                      completedAt: row.completed_at || h.completedAt,
+                      customerName: row.customer_name || h.customerName,
+                      staffName: row.staff_name || h.staffName,
+                    }
                     : h
                 )
               );
@@ -261,29 +276,46 @@ export default function CmdPage() {
       item.status === "processing"
         ? "ready"
         : item.status === "ready"
-        ? "completed"
-        : "processing";
+          ? "completed"
+          : "processing";
+
+    const nowIso = new Date().toISOString();
+    const readyAt = nextStatus === "ready" ? nowIso : item.readyAt;
+    const completedAt = nextStatus === "completed" ? nowIso : item.completedAt;
 
     setHistory((prev) =>
-      prev.map((h) => (h.id === item.id ? { ...h, status: nextStatus } : h))
+      prev.map((h) =>
+        h.id === item.id ? { ...h, status: nextStatus, readyAt, completedAt } : h
+      )
     );
 
     const supabase = createClient();
+    const updatePayload: any = { status: nextStatus };
+    if (nextStatus === "ready") updatePayload.ready_at = nowIso;
+    if (nextStatus === "completed") updatePayload.completed_at = nowIso;
+
     const { error } = await supabase
       .from("cmd_express_history")
-      .update({ status: nextStatus })
+      .update(updatePayload)
       .eq("id", item.id);
 
     if (error) {
-      toast.error("Gagal memperbarui status ke Supabase");
+      // Fallback if ready_at / completed_at columns don't exist yet on user DB schema
+      const { error: fbError } = await supabase
+        .from("cmd_express_history")
+        .update({ status: nextStatus })
+        .eq("id", item.id);
+
+      if (fbError) {
+        toast.error("Gagal memperbarui status ke Supabase");
+      }
     } else {
       toast.success(
-        `Status Express #${item.expressNumber} diubah ke ${
-          nextStatus === "ready"
-            ? "Siap Pickup 🟢"
-            : nextStatus === "completed"
-            ? "Selesai ✅"
-            : "Diproses ⏳"
+        `Status Express #${item.expressNumber} diubah ke ${nextStatus === "ready"
+          ? "Siap Pickup"
+          : nextStatus === "completed"
+            ? "Selesai"
+            : "Diproses"
         }`
       );
     }
@@ -309,8 +341,13 @@ export default function CmdPage() {
     setTimeout(() => setCopiedPos(false), 2000);
   };
 
+  const processingCount = history.filter((i) => i.status === "processing").length;
+  const readyCount = history.filter((i) => i.status === "ready").length;
+  const completedCount = history.filter((i) => i.status === "completed").length;
+
   const filteredHistory = history
     .filter((item) => {
+      if (statusFilter !== "all" && item.status !== statusFilter) return false;
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase().trim();
       const cleanQ = q.replace("#", "").trim();
@@ -318,6 +355,7 @@ export default function CmdPage() {
       return (
         item.customerName.toLowerCase().includes(q) ||
         item.staffName.toLowerCase().includes(q) ||
+        (item.trackingCode && item.trackingCode.toLowerCase().includes(q)) ||
         expressStr === cleanQ ||
         `express #${item.expressNumber}`.toLowerCase().includes(q)
       );
@@ -331,11 +369,11 @@ export default function CmdPage() {
     });
 
   return (
-    <main className="flex-1 px-4 py-4 sm:px-6 lg:px-8 max-w-6xl mx-auto w-full">
+    <main className="flex-1 px-4 py-4  max-w-6xl mx-auto w-full">
       {/* TODAY'S & HISTORICAL EXPRESS TABLE */}
       <section className="no-print">
         <Card className="overflow-hidden bg-background">
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-3 space-y-3">
             {/* Title Row */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2 flex-wrap">
@@ -343,29 +381,20 @@ export default function CmdPage() {
                   {historyDateFilter === getLocalDateString()
                     ? "Express Hari Ini"
                     : historyDateFilter === "all"
-                    ? "Semua Data Express"
-                    : `Express Tanggal ${formatDisplayDate(historyDateFilter)}`}
+                      ? "Semua Data Express"
+                      : `Express Tanggal ${formatDisplayDate(historyDateFilter)}`}
                 </h3>
-                {historyDateFilter !== getLocalDateString() && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setHistoryDateFilter(getLocalDateString())}
-                    className="h-6 px-2 text-[11px] text-primary hover:text-primary/80 font-medium"
-                  >
-                    (Kembali ke Hari Ini)
-                  </Button>
-                )}
+
               </div>
               {history.length > 0 && (
                 <Badge variant="secondary" className="text-xs font-semibold px-2.5 py-0.5 rounded-full shrink-0">
-                  {history.length} Total
+                  {filteredHistory.length} dari {history.length} Total
                 </Badge>
               )}
             </div>
 
             {/* Sub-bar: Date Filter & Sort (Left) & Search (Right) */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                 {/* Quick Filter Buttons & Custom Date Input */}
                 <div className="flex items-center gap-1.5 bg-muted/40 p-1 rounded-xl border">
@@ -397,20 +426,76 @@ export default function CmdPage() {
                   </Button>
                 </div>
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSortOrder((prev) => (prev === "newest" ? "oldest" : "newest"))}
-                  className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground gap-1.5 hover:bg-muted/40 font-normal rounded-xl border border-dashed"
-                >
-                  <ArrowUpDown className="size-3.5" />
-                  <span>
-                    Sort{" "}
+                {/* Filter & Sort Button Group */}
+                <div className="flex items-center gap-0.5 bg-background border p-0.5 rounded-xl shadow-2xs">
+                  {/* Filter Popover Dropdown */}
+                  <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground gap-1.5 font-medium rounded-lg"
+                      >
+                        <ListFilter className="size-3.5" />
+                        <span>Filter</span>
+                        {statusFilter !== "all" && (
+                          <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.2 rounded-full font-bold">
+                            {statusFilter === "processing" ? "Diproses" : statusFilter === "ready" ? "Siap Pickup" : "Selesai"}
+                          </span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-52 p-1.5 rounded-2xl shadow-xl border">
+                      <div className="space-y-0.5">
+                        {[
+                          { id: "all", label: "Semua", count: history.length },
+                          { id: "processing", label: "Diproses", count: processingCount },
+                          { id: "ready", label: "Siap Pickup", count: readyCount },
+                          { id: "completed", label: "Selesai", count: completedCount },
+                        ].map((opt) => {
+                          const isSelected = statusFilter === opt.id;
+                          return (
+                            <button
+                              key={opt.id}
+                              type="button"
+                              onClick={() => {
+                                setStatusFilter(opt.id as any);
+                                setFilterOpen(false);
+                              }}
+                              className={cn(
+                                "w-full flex items-center justify-between px-3 py-2 text-xs font-medium rounded-xl transition-colors text-left cursor-pointer select-none",
+                                isSelected
+                                  ? "bg-muted font-bold text-foreground"
+                                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                              )}
+                            >
+                              <span>
+                                {opt.label} <span className="text-[11px] text-muted-foreground/70 font-normal">({opt.count})</span>
+                              </span>
+                              {isSelected && <Check className="size-3.5 text-foreground shrink-0" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+
+                  <div className="h-4 w-px bg-border shrink-0" />
+
+                  {/* Sort Button */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSortOrder((prev) => (prev === "newest" ? "oldest" : "newest"))}
+                    className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground gap-1.5 font-medium rounded-lg"
+                  >
+                    <ArrowUpDown className="size-3.5" />
+                    <span>Sort</span>
                     <span className="text-[11px] text-muted-foreground/70 font-normal">
                       ({sortOrder === "newest" ? "Terbaru" : "Terlama"})
                     </span>
-                  </span>
-                </Button>
+                  </Button>
+                </div>
               </div>
 
               <div className="relative min-w-[200px] sm:w-72">
@@ -499,8 +584,8 @@ export default function CmdPage() {
                             item.status === "ready"
                               ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/20"
                               : item.status === "completed"
-                              ? "bg-blue-500/10 text-blue-600 border-blue-500/30 hover:bg-blue-500/20"
-                              : "bg-amber-500/10 text-amber-600 border-amber-500/30 hover:bg-amber-500/20"
+                                ? "bg-blue-500/10 text-blue-600 border-blue-500/30 hover:bg-blue-500/20"
+                                : "bg-amber-500/10 text-amber-600 border-amber-500/30 hover:bg-amber-500/20"
                           )}
                           title="Klik untuk ubah status pesanan"
                         >
@@ -551,7 +636,7 @@ export default function CmdPage() {
                                 `Express#${item.expressNumber} by ${item.staffName || "Staff"} - ${item.customerName}${pStr}`
                               );
                             }}
-                            className="text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted gap-1"
+                            className="text-[11px] font-medium text-foreground hover:bg-muted gap-1"
                             title="Salin untuk customer note"
                           >
                             <Copy className="size-3.5" />
@@ -666,20 +751,19 @@ export default function CmdPage() {
             )}
 
             <div className="pt-2 pb-1 text-center flex flex-col items-center space-y-0.5">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+              <QRCodeSVG
+                value={
                   origin
-                    ? `${origin}/track?id=${
-                        reprintItem.trackingCode ||
-                        generateTrackingCode(reprintItem.expressNumber)
-                      }`
-                    : `https://tttm.haga.my.id/track?id=${
-                        reprintItem.trackingCode ||
-                        generateTrackingCode(reprintItem.expressNumber)
-                      }`
-                )}`}
-                alt="Scan untuk tracking pesanan"
-                className="w-full aspect-square object-contain mix-blend-multiply mx-auto"
+                    ? `${origin}/track?id=${reprintItem.trackingCode ||
+                    generateTrackingCode(reprintItem.expressNumber)
+                    }`
+                    : `https://tttm.haga.my.id/track?id=${reprintItem.trackingCode ||
+                    generateTrackingCode(reprintItem.expressNumber)
+                    }`
+                }
+                size={140}
+                level="M"
+                className="mx-auto my-1.5"
               />
               <p className="text-[9px] font-mono text-neutral-900 font-bold uppercase tracking-tight pt-0.5">
                 Tracking Code:{" "}

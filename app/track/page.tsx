@@ -28,6 +28,12 @@ import {
   Loader2,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export type OrderStatus = "processing" | "ready" | "completed";
 
@@ -44,6 +50,9 @@ export type TrackItem = {
   status: OrderStatus;
   trackingCode?: string;
   createdAt?: string;
+  updatedAt?: string;
+  readyAt?: string;
+  completedAt?: string;
   printedTime: string;
 };
 
@@ -58,6 +67,44 @@ function formatDisplayDate(dateStr: string) {
     });
   } catch {
     return dateStr;
+  }
+}
+
+function formatTimestampEng(isoOrText?: string) {
+  if (!isoOrText) return null;
+  try {
+    const d = new Date(isoOrText);
+    if (isNaN(d.getTime())) return null;
+    return d.toLocaleString("en-US", {
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch {
+    return null;
+  }
+}
+
+function formatSplitTimestamp(isoOrText?: string) {
+  if (!isoOrText) return { date: "-", time: "-" };
+  try {
+    const d = new Date(isoOrText);
+    if (isNaN(d.getTime())) return { date: "-", time: "-" };
+    const date = d.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+    const time = d.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    return { date, time };
+  } catch {
+    return { date: "-", time: "-" };
   }
 }
 
@@ -78,6 +125,26 @@ function TrackContent() {
     }
   }, [initialQuery]);
 
+  function parseTrackingCode(codeStr: string) {
+    const clean = codeStr.trim().toUpperCase().replace("#", "");
+    const match = clean.match(/^EX(\d{2,4})(\d{2})(\d{2})-(\d+)$/);
+    if (!match) return null;
+
+    let [, yearStr, mmStr, ddStr, numStr] = match;
+    if (yearStr.length === 2) {
+      yearStr = `20${yearStr}`;
+    }
+
+    const year = parseInt(yearStr, 10);
+    const month = parseInt(mmStr, 10);
+    const day = parseInt(ddStr, 10);
+    const expressNum = parseInt(numStr, 10);
+
+    if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(expressNum)) return null;
+
+    return { year, month, day, expressNum };
+  }
+
   async function handleSearch(searchVal: string) {
     const clean = searchVal.trim().replace("#", "");
     if (!clean) return;
@@ -89,32 +156,15 @@ function TrackContent() {
       let dataRow: any = null;
       const upperClean = clean.toUpperCase();
 
-      // 1. Check if searching by tracking code (e.g. EX260807-01)
-      if (upperClean.startsWith("EX")) {
-        const { data: resiData } = await supabase
-          .from("cmd_express_history")
-          .select("*")
-          .ilike("tracking_code", `%${clean}%`)
-          .limit(1);
+      // 1. First search by tracking_code column in Supabase (e.g. 6-char code like K7B9X2, or EX20260808-1)
+      const { data: resiData } = await supabase
+        .from("cmd_express_history")
+        .select("*")
+        .ilike("tracking_code", `%${clean}%`)
+        .limit(1);
 
-        if (resiData && resiData.length > 0) {
-          dataRow = resiData[0];
-        } else {
-          // Smart fallback: extract express number from EX260807-01 -> 1
-          const parts = clean.split("-");
-          const lastNum = parts.length > 1 ? parseInt(parts[1], 10) : parseInt(clean.replace(/\D/g, ""), 10);
-          if (!isNaN(lastNum)) {
-            const { data: numData } = await supabase
-              .from("cmd_express_history")
-              .select("*")
-              .eq("express_number", lastNum)
-              .order("created_at", { ascending: false })
-              .limit(1);
-            if (numData && numData.length > 0) {
-              dataRow = numData[0];
-            }
-          }
-        }
+      if (resiData && resiData.length > 0) {
+        dataRow = resiData[0];
       }
       // 2. Check if searching by standard 36-char UUID
       else if (clean.length === 36 && clean.includes("-")) {
@@ -127,7 +177,27 @@ function TrackContent() {
           dataRow = uuidData[0];
         }
       }
-      // 3. Check if searching by numeric express number (e.g. 1)
+      // 3. Fallback for old EX date-based tracking format if not found by tracking_code
+      else if (upperClean.startsWith("EX")) {
+        const parsed = parseTrackingCode(clean);
+        if (parsed) {
+          const startLocal = new Date(parsed.year, parsed.month - 1, parsed.day, 0, 0, 0, 0);
+          const endLocal = new Date(parsed.year, parsed.month - 1, parsed.day, 23, 59, 59, 999);
+
+          const { data: dateNumData } = await supabase
+            .from("cmd_express_history")
+            .select("*")
+            .eq("express_number", parsed.expressNum)
+            .gte("created_at", startLocal.toISOString())
+            .lte("created_at", endLocal.toISOString())
+            .limit(1);
+
+          if (dateNumData && dateNumData.length > 0) {
+            dataRow = dateNumData[0];
+          }
+        }
+      }
+      // 4. Check if searching by numeric express number (e.g. 1)
       else if (!isNaN(Number(clean))) {
         const { data: numData } = await supabase
           .from("cmd_express_history")
@@ -139,7 +209,7 @@ function TrackContent() {
           dataRow = numData[0];
         }
       }
-      // 4. Fallback search by customer name
+      // 5. Fallback search by customer name
       else {
         const { data: nameData } = await supabase
           .from("cmd_express_history")
@@ -166,6 +236,9 @@ function TrackContent() {
           status: (dataRow.status as OrderStatus) || "processing",
           trackingCode: dataRow.tracking_code || upperClean,
           createdAt: dataRow.created_at,
+          updatedAt: dataRow.updated_at,
+          readyAt: dataRow.ready_at,
+          completedAt: dataRow.completed_at,
           printedTime: dataRow.printed_time,
         });
       } else {
@@ -197,8 +270,18 @@ function TrackContent() {
         },
         (payload) => {
           const updated = payload.new;
-          if (updated && updated.status) {
-            setActiveOrder((prev) => (prev ? { ...prev, status: updated.status as OrderStatus } : null));
+          if (updated) {
+            setActiveOrder((prev) =>
+              prev
+                ? {
+                  ...prev,
+                  status: (updated.status as OrderStatus) || prev.status,
+                  updatedAt: updated.updated_at || prev.updatedAt,
+                  readyAt: updated.ready_at || prev.readyAt,
+                  completedAt: updated.completed_at || prev.completedAt,
+                }
+                : null
+            );
           }
         }
       )
@@ -239,7 +322,7 @@ function TrackContent() {
     : 0;
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] dark:bg-[#0a0a0a] text-foreground flex flex-col items-center px-4 py-8 sm:px-6">
+    <div className="min-h-screen  text-foreground flex flex-col items-center px-4 py-8 sm:px-6">
       {/* Header Brand */}
       <div className="w-full max-w-lg flex flex-col items-center mb-6 text-center space-y-2">
         <div className="flex items-center gap-2">
@@ -318,14 +401,14 @@ function TrackContent() {
             >
               {/* CURRENT STATUS BANNER CARD */}
               <Card
-                className={`rounded-2xl overflow-hidden transition-all shadow-xs ${activeOrder.status === "ready"
+                className={` overflow-hidden transition-all ${activeOrder.status === "ready"
                   ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-950 dark:text-emerald-200"
                   : activeOrder.status === "completed"
                     ? "bg-blue-500/10 border-blue-500/30 text-blue-950 dark:text-blue-200"
                     : "bg-amber-500/10 border-amber-500/30 text-amber-950 dark:text-amber-200"
                   }`}
               >
-                <CardContent className=" flex items-center gap-3">
+                <CardContent className="flex items-center gap-3">
                   <div
                     className={`size-16 rounded-lg flex items-center justify-center shrink-0 ${activeOrder.status === "ready"
                       ? "bg-emerald-600 text-white"
@@ -345,7 +428,7 @@ function TrackContent() {
                   <div className="space-y-1 min-w-0 p-1.5">
                     <h2 className="text-lg font-bold tracking-tight">
                       {activeOrder.status === "ready"
-                        ? "Your Custom Bag is Ready for Pickup! 🎉"
+                        ? "Your Custom Bag is Ready for Pickup"
                         : activeOrder.status === "completed"
                           ? "Order Picked Up & Completed"
                           : "Currently In Production"}
@@ -362,7 +445,7 @@ function TrackContent() {
               </Card>
 
               {/* TIMELINE STEPPER */}
-              <Card className="rounded-2xl shadow-xs">
+              <Card>
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Production Progress
@@ -370,54 +453,82 @@ function TrackContent() {
                 </CardHeader>
 
                 <CardContent>
-                  <div className="relative space-y-6 before:absolute before:bottom-2 before:left-4 before:top-2 before:w-px before:bg-border">
+                  <div className="relative">
                     {steps.map((step, idx) => {
                       const isPassed = idx <= currentStepIndex;
                       const isCurrent = idx === currentStepIndex;
                       const Icon = step.icon;
 
+                      // Timestamp calculation for each step
+                      let stepIso: string | undefined;
+                      if (step.id === "processing") {
+                        stepIso = activeOrder.createdAt || String(activeOrder.printedTime || "").split("|")[0];
+                      } else if (step.id === "ready" && isPassed) {
+                        stepIso = activeOrder.readyAt;
+                      } else if (step.id === "completed" && isPassed) {
+                        stepIso = activeOrder.completedAt;
+                      }
+
+                      const { date: dateStr, time: timeStr } = formatSplitTimestamp(stepIso);
+
                       return (
-                        <div
-                          key={step.id}
-                          className="relative z-10 flex items-start gap-4"
-                        >
-                          <div className="relative flex size-8 shrink-0 items-center justify-center">
+                        <div key={step.id} className="relative flex items-start gap-3 sm:gap-4 min-h-[px] pb-2 last:pb-0">
+                          {/* Left: Date & Time */}
+                          <div className="w-[85px] sm:w-[95px] shrink-0 text-right space-y-0.5">
+                            <div className={cn("text-xs font-semibold leading-tight", isPassed ? "text-foreground" : "text-muted-foreground/40")}>
+                              {isPassed ? dateStr : "-"}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground/60 font-mono leading-tight">
+                              {isPassed ? timeStr : "-"}
+                            </div>
+                          </div>
+
+                          {/* Center: Node Icon Wrapper with Equal Spacing & Connecting Line */}
+                          <div className="relative flex items-center justify-center shrink-0 size-8 sm:size-9">
+                            {/* Connecting Line - connects from icon center 1 to icon center 2 with equal distance */}
+                            {idx < steps.length - 1 && (
+                              <div
+                                className={cn(
+                                  "absolute top-4 sm:top-4.5 left-1/2 -translate-x-1/2 w-[2px] bottom-[-60px] z-0 transition-colors pointer-events-none",
+                                  idx < currentStepIndex
+                                    ? "bg-emerald-500"
+                                    : "border-l-2 border-dashed border-muted-foreground/30 bg-transparent"
+                                )}
+                              />
+                            )}
+
                             {isCurrent && (
                               <motion.span
                                 animate={{ scale: [1, 1.35, 1], opacity: [0.25, 0.65, 0.25] }}
-                                transition={{
-                                  duration: 2,
-                                  repeat: Infinity,
-                                  ease: "easeInOut",
-                                }}
-                                className="absolute inset-0 rounded-full bg-neutral-500/50"
+                                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                                className="absolute inset-0 rounded-full bg-orange-500/40"
                               />
                             )}
                             <div
                               className={cn(
-                                "relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold shadow-xs transition-colors",
-                                isCurrent && "bg-primary text-primary-foreground",
-                                isPassed && !isCurrent && "bg-emerald-600 text-white",
-                                !isPassed && "bg-muted text-muted-foreground"
+                                "relative z-10 flex size-8 sm:size-9 items-center justify-center rounded-full text-xs font-bold transition-all shadow-xs shrink-0",
+                                isCurrent
+                                  ? "bg-orange-500 text-white shadow-orange-500/20"
+                                  : isPassed
+                                    ? "bg-emerald-500 text-white"
+                                    : "bg-muted text-muted-foreground/40 border border-border/50"
                               )}
                             >
                               <Icon className="size-4" />
                             </div>
                           </div>
 
-                          <div className="space-y-0.5">
+                          {/* Right: Step Info */}
+                          <div className="space-y-0.5 min-w-0 flex-1">
                             <h4
                               className={cn(
-                                "text-xs font-bold",
-                                isPassed
-                                  ? "text-foreground"
-                                  : "text-muted-foreground"
+                                "text-xs sm:text-sm font-bold leading-snug",
+                                isPassed ? "text-foreground" : "text-muted-foreground/60"
                               )}
                             >
                               {step.title}
                             </h4>
-
-                            <p className="text-[11px] leading-snug text-muted-foreground">
+                            <p className="text-[11px] leading-relaxed text-muted-foreground">
                               {step.desc}
                             </p>
                           </div>
@@ -429,7 +540,7 @@ function TrackContent() {
               </Card>
 
               {/* ORDER DETAILS CARD */}
-              <Card className="rounded-2xl shadow-xs">
+              <Card>
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Order Details
@@ -483,15 +594,15 @@ function TrackContent() {
                   <div className="space-y-2">
                     <div className="flex justify-between items-center text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                       <span>Custom Items</span>
-                      <span className="font-mono font-bold">QTY: {activeOrder.totalQty} PCS</span>
+                      <span>TOTAL: {activeOrder.totalQty} PCS</span>
                     </div>
 
-                    <div className="divide-y divide-border/60 rounded-xl border bg-muted/20 px-3.5 py-0.5 text-xs font-medium">
+                    <div className="divide-y divide-border/60 rounded-lg border bg-muted/20 px-3.5 py-0.5 text-xs font-medium">
                       {activeOrder.items.map((item, idx) => (
                         <div key={idx} className="flex justify-between items-center py-2.5 gap-2">
                           <span className="font-semibold text-foreground">{item.name}</span>
-                          <Badge variant="outline" className="font-mono text-xs font-bold shrink-0 bg-background px-2.5 py-0.5">
-                            x{item.qty}
+                          <Badge variant="outline" className="text-xs font-bold shrink-0 bg-background px-2.5 py-0.5">
+                            {item.qty} pcs
                           </Badge>
                         </div>
                       ))}
@@ -500,36 +611,37 @@ function TrackContent() {
                 </CardContent>
               </Card>
 
-              {/* STORE CONTACT BUTTONS (SHADCN BUTTONS) */}
-              <div className="pt-2 text-center flex flex-wrap items-center justify-center gap-2">
-                <Button variant="outline" className="gap-2" asChild>
-                  <a
-                    href={`https://wa.me/6281519602752?text=${encodeURIComponent(
-                      `Hello Ticket to the Moon, I would like to inquire about my custom express order #${activeOrder.expressNumber} (${activeOrder.trackingCode || ""}) under the name ${activeOrder.customerName}`
-                    )}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <MessageCircle className="size-4 " /> WhatsApp
-                  </a>
-                </Button>
-                <Button variant="outline" className="gap-2" asChild>
-                  <a
-                    href={`mailto:tickettothemoonsunsetroad@gmail.com?subject=${encodeURIComponent(
-                      `Custom Express Inquiry #${activeOrder.expressNumber} (${activeOrder.trackingCode || ""})`
-                    )}&body=${encodeURIComponent(
-                      `Hello Ticket to the Moon Store,\n\nI would like to inquire about my Custom Express order #${activeOrder.expressNumber} (${activeOrder.trackingCode || ""}) under the name ${activeOrder.customerName}.\n\nThank you.`
-                    )}`}
-                  >
-                    <Mail className="size-4" /> Email
-                  </a>
-                </Button>
+              {/* STORE CONTACT TEXT */}
+              <div className="pt-2 text-center text-xs text-muted-foreground flex flex-wrap items-center justify-center gap-1 font-medium">
+                <span>Have an issue with this order?</span>
+                <a
+                  href={`https://wa.me/6281519602752?text=${encodeURIComponent(
+                    `Hello Ticket to the Moon, I would like to inquire about my custom express order #${activeOrder.expressNumber} (${activeOrder.trackingCode || ""}) under the name ${activeOrder.customerName}`
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-semibold text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 underline underline-offset-4 cursor-pointer transition-colors"
+                >
+                  WhatsApp
+                </a>
+                <span>or</span>
+                <a
+                  href={`mailto:tickettothemoonsunsetroad@gmail.com?subject=${encodeURIComponent(
+                    `Custom Express Inquiry #${activeOrder.expressNumber} (${activeOrder.trackingCode || ""})`
+                  )}&body=${encodeURIComponent(
+                    `Hello Ticket to the Moon Store,\n\nI would like to inquire about my Custom Express order #${activeOrder.expressNumber} (${activeOrder.trackingCode || ""}) under the name ${activeOrder.customerName}.\n\nThank you.`
+                  )}`}
+                  className="font-semibold text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 underline underline-offset-4 cursor-pointer transition-colors"
+                >
+                  Email
+                </a>
+                <span>us</span>
               </div>
             </motion.div>
           </AnimatePresence>
         )}
       </div>
-    </div>
+    </div >
   );
 }
 

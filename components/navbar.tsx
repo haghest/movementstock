@@ -55,23 +55,24 @@ export function Navbar() {
 
   const navItems = [
     {
-      name: "Movement Stock",
-      shortName: "Stock",
+      name: "Movement",
+      shortName: "Movement",
       href: "/",
       icon: PackageCheck,
     },
     {
-      name: "Custom Express",
-      shortName: "Express",
-      href: "/cmd",
-      icon: SwatchBook,
-    },
-    {
-      name: "Nota Express",
+      name: "Nota",
       shortName: "Nota",
       href: "/nota",
       icon: Receipt,
     },
+    {
+      name: "Express",
+      shortName: "Express",
+      href: "/cmd",
+      icon: SwatchBook,
+    },
+
   ];
 
   return (

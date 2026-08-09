@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/client";
+import { QRCodeSVG } from "qrcode.react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,10 +55,10 @@ function DatePickerPopover({
 
   const displayDateText = selectedDate
     ? selectedDate.toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })
     : "Pilih tanggal";
 
   return (
@@ -186,12 +187,13 @@ function getLocalDateString(d: Date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
-function generateTrackingCode(expressNum: number, dateObj: Date = new Date()) {
-  const yy = String(dateObj.getFullYear()).slice(-2);
-  const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
-  const dd = String(dateObj.getDate()).padStart(2, "0");
-  const numStr = String(expressNum).padStart(2, "0");
-  return `EX${yy}${mm}${dd}-${numStr}`;
+function generateTrackingCode(expressNum?: number, dateObj: Date = new Date()) {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let result = "";
+  for (let i = 0; i < 6; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
 }
 
 function formatFullDisplayDate(dateStr?: string) {
@@ -289,8 +291,7 @@ export default function NotaExpressPage() {
 
   function generateNewTicketId() {
     const now = new Date();
-    const dateStr = getLocalDateString(now).replace(/-/g, "");
-    setTicketId(`EX${dateStr}-${expressNumber}`);
+    setTicketId(generateTrackingCode());
     setCreatedTime(
       now.toLocaleDateString("id-ID", {
         day: "numeric",
@@ -353,7 +354,7 @@ export default function NotaExpressPage() {
     const printedTimeStr = formatTimestamp(nowIso);
     setCreatedTime(printedTimeStr);
 
-    const tCode = generateTrackingCode(currentExpress);
+    const tCode = ticketId || generateTrackingCode();
     setTicketId(tCode);
 
     // Insert into Supabase
@@ -459,16 +460,14 @@ export default function NotaExpressPage() {
                   return (
                     <div
                       key={bag}
-                      className={`flex items-center font-medium justify-between border p-2 rounded-lg transition-all ${
-                        isSelected
-                          ? "bg-accent border"
-                          : "hover:bg-muted/50 border border-transparent"
-                      }`}
+                      className={`flex items-center font-medium justify-between border p-2 rounded-lg transition-all ${isSelected
+                        ? "bg-accent border"
+                        : "hover:bg-muted/50 border border-transparent"
+                        }`}
                     >
                       <span
-                        className={`text-sm ${
-                          isSelected ? "font-semibold text-foreground" : "text-muted-foreground"
-                        }`}
+                        className={`text-sm ${isSelected ? "font-semibold text-foreground" : "text-muted-foreground"
+                          }`}
                       >
                         {bag}
                       </span>
@@ -484,9 +483,8 @@ export default function NotaExpressPage() {
                           <Minus className="size-3" />
                         </Button>
                         <span
-                          className={`w-6 text-center text-xs font-bold ${
-                            isSelected ? "text-primary" : "text-muted-foreground"
-                          }`}
+                          className={`w-6 text-center text-xs font-bold ${isSelected ? "text-primary" : "text-muted-foreground"
+                            }`}
                         >
                           {qty}
                         </span>
@@ -690,14 +688,15 @@ export default function NotaExpressPage() {
               )}
               {/* Tracking QR Code */}
               <div className="pt-2 pb-1 text-center flex flex-col items-center space-y-0.5">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+                <QRCodeSVG
+                  value={
                     origin
                       ? `${origin}/track?id=${ticketId || generateTrackingCode(expressNumber)}`
                       : `https://tttm.haga.my.id/track?id=${ticketId || generateTrackingCode(expressNumber)}`
-                  )}`}
-                  alt="Scan untuk tracking pesanan"
-                  className="w-full aspect-square object-contain mix-blend-multiply mx-auto"
+                  }
+                  size={140}
+                  level="M"
+                  className="mx-auto my-1.5"
                 />
                 <p className="text-[9px] font-mono text-neutral-900 font-bold uppercase tracking-tight pt-0.5">
                   Tracking Code: {ticketId || generateTrackingCode(expressNumber)}
