@@ -360,6 +360,7 @@ export default function NotaExpressPage() {
     // Insert into Supabase
     const supabase = createClient();
     try {
+
       const { error } = await supabase.from("cmd_express_history").insert([
         {
           express_number: currentExpress,
@@ -609,7 +610,7 @@ export default function NotaExpressPage() {
               className="bg-white text-black p-3.5 shadow-lg border border-neutral-300 text-xs leading-snug select-none"
             >
               {/* Header Logo */}
-              <div className="text-center border-black border-dashed flex flex-col items-center">
+              {/* <div className="text-center border-black border-dashed flex flex-col items-center">
                 <img
                   src="/tttm.jpg"
                   alt="Ticket to the Moon Logo"
@@ -618,31 +619,31 @@ export default function NotaExpressPage() {
                 <p className="font-semibold text-lg py-1 inline-block font-mono">
                   Express #{expressNumber}
                 </p>
-              </div>
+              </div> */}
 
               {/* PICKUP BADGE */}
-              <div className="text-center border-t border-black border-dashed pt-2">
-                <p className="text-[10px] uppercase font-bold text-neutral-600 tracking-wider">
+              <div className="text-center  border-black border-dashed pt-2">
+                <p className="text-[10px] uppercase font-extrabold tracking-wider">
                   Pickup Date
                 </p>
-                <p className="text-xs font-bold mt-0.5 text-black">
+                <p className="text-sm font-bold mt-0.5 text-black">
                   {formatFullDisplayDate(pickupDate)}
                 </p>
-                <p className="text-[11px] font-bold text-neutral-900">
+                <p className="text-sm font-bold text-neutral-900">
                   {pickupTime || "-"}
                 </p>
               </div>
 
               {/* Customer Info */}
-              <div className="py-1.5 border-b border-black border-dashed space-y-1 text-[11px]">
+              <div className="py-1.5 border-b border-black border-dashed space-y-1 text-sm font-medium">
                 <div className="flex justify-between gap-3 font-mono">
-                  <span className="text-neutral-600 shrink-0">CUSTOMER:</span>
+                  <span className=" shrink-0">CUSTOMER:</span>
                   <span className="font-semibold uppercase text-right break-words">
                     {customerName || "-"}
                   </span>
                 </div>
                 <div className="flex justify-between gap-3 font-mono">
-                  <span className="text-neutral-600 shrink-0">STAFF:</span>
+                  <span className=" shrink-0">STAFF:</span>
                   <span className="font-semibold uppercase text-right break-words">
                     {staffName || "-"}
                   </span>
@@ -651,17 +652,17 @@ export default function NotaExpressPage() {
 
               {/* ITEMS SPECS */}
               <div className="py-2 border-b border-black border-dashed">
-                <div className="flex justify-between items-center mb-1 text-[10px] font-semibold text-neutral-600">
+                <div className="flex justify-between items-center mb-1 text-[10px] font-semibold font-mono">
                   <span>ITEM</span>
                   <span>QYT: {totalQty} PCS</span>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {activeItems.length > 0 ? (
                     activeItems.map((item) => (
                       <div
                         key={item.name}
-                        className="flex justify-between items-center font-medium text-xs gap-2"
+                        className="flex justify-between items-center font-medium text-sm gap-2"
                       >
                         <span>{item.name}</span>
                         <span className="font-mono shrink-0">x{item.qty}</span>
@@ -681,33 +682,37 @@ export default function NotaExpressPage() {
                   <p className="text-[9px] font-bold text-neutral-600 uppercase mb-0.5">
                     NOTES:
                   </p>
-                  <p className="text-xs leading-snug whitespace-pre-wrap break-words max-w-full">
+                  <p className="text-sm leading-snug whitespace-pre-wrap break-words max-w-full">
                     {notes}
                   </p>
                 </div>
               )}
               {/* Tracking QR Code */}
-              <div className="pt-2 pb-1 text-center flex flex-col items-center space-y-0.5">
+              {/* <div className="pt-2 pb-1 text-center flex flex-col items-center space-y-0.5">
                 <QRCodeSVG
                   value={
                     origin
-                      ? `${origin}/track?id=${ticketId || generateTrackingCode(expressNumber)}`
-                      : `https://tttm.haga.my.id/track?id=${ticketId || generateTrackingCode(expressNumber)}`
+                      ? `${origin}/track?id=${ticketId}`
+                      : `https://tttm.haga.my.id/track?id=${ticketId}`
                   }
                   size={140}
                   level="M"
                   className="mx-auto my-1.5"
                 />
                 <p className="text-[9px] font-mono text-neutral-900 font-bold uppercase tracking-tight pt-0.5">
-                  Tracking Code: {ticketId || generateTrackingCode(expressNumber)}
+                  Tracking Code: {ticketId}
                 </p>
                 <p className="text-[10px] font-mono text-neutral-600 font-semibold uppercase tracking-tight">
                   Scan to Track Bag Status
                 </p>
-              </div>
+              </div> */}
+
               {/* Timestamp */}
-              <div className="py-1 text-center text-[10px] text-neutral-600">
-                <span>{createdTime || "TODAY"}</span>
+              <div className="py-1 text-center text-[10px]">
+                <span>Diprint {createdTime || "TODAY"}</span>
+                <p className="text-sm font-mono  font-bold uppercase tracking-tight ">
+                  {ticketId}
+                </p>
               </div>
             </div>
           </CardContent>
