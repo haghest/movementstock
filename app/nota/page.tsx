@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/client";
-import { QRCodeSVG } from "qrcode.react";
+import { ThermalReceipt } from "@/components/thermal-receipt";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,7 +66,7 @@ function DatePickerPopover({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="w-full justify-between h-8 text-xs px-2.5 border-input bg-background text-foreground"
+          className="w-full justify-between h-8 font-normal px-2.5 border-input bg-background text-foreground"
         >
           <span className="truncate">{displayDateText}</span>
           <ChevronDown className="size-3.5 text-muted-foreground shrink-0 ml-1" />
@@ -534,7 +534,7 @@ export default function NotaExpressPage() {
             {/* 3. PICKUP DATE & TIME */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-muted-foreground">
-                Tanggal Pickup
+                Tanggal & Jam Diambil
               </label>
               <div className="grid grid-cols-2 gap-4">
                 <DatePickerPopover
@@ -589,7 +589,7 @@ export default function NotaExpressPage() {
                 <Printer className="size-4 mr-1.5" /> Print
               </Button>
               <Button type="button" variant="outline" size="lg" onClick={handleReset}>
-                <RotateCcw className="size-3.5 mr-1" /> Reset
+                Reset
               </Button>
             </div>
           </CardContent>
@@ -601,120 +601,19 @@ export default function NotaExpressPage() {
             <CardTitle className="text-base flex items-center gap-2">Preview</CardTitle>
           </CardHeader>
           <CardContent className="p-4 flex justify-center items-start overflow-y-auto max-h-[calc(100vh-160px)] rounded-b-xl">
-            {/* Actual Thermal Receipt Layout */}
-            <div
-              id="thermal-receipt"
-              style={{
-                width: "210px",
-              }}
-              className="bg-white text-black p-3.5 shadow-lg border border-neutral-300 text-xs leading-snug select-none"
-            >
-              {/* Header Logo */}
-              {/* <div className="text-center border-black border-dashed flex flex-col items-center">
-                <img
-                  src="/tttm.jpg"
-                  alt="Ticket to the Moon Logo"
-                  className="h-auto w-full mx-auto mb-1 object-contain mix-blend-multiply"
-                />
-                <p className="font-semibold text-lg py-1 inline-block font-mono">
-                  Express #{expressNumber}
-                </p>
-              </div> */}
-
-              {/* PICKUP BADGE */}
-              <div className="text-center  border-black border-dashed pt-2">
-                <p className="text-[10px] uppercase font-extrabold tracking-wider">
-                  Pickup Date
-                </p>
-                <p className="text-sm font-bold mt-0.5 text-black">
-                  {formatFullDisplayDate(pickupDate)}
-                </p>
-                <p className="text-sm font-bold text-neutral-900">
-                  {pickupTime || "-"}
-                </p>
-              </div>
-
-              {/* Customer Info */}
-              <div className="py-1.5 border-b border-black border-dashed space-y-1 text-sm font-medium">
-                <div className="flex justify-between gap-3 font-mono">
-                  <span className=" shrink-0">CUSTOMER:</span>
-                  <span className="font-semibold uppercase text-right break-words">
-                    {customerName || "-"}
-                  </span>
-                </div>
-                <div className="flex justify-between gap-3 font-mono">
-                  <span className=" shrink-0">STAFF:</span>
-                  <span className="font-semibold uppercase text-right break-words">
-                    {staffName || "-"}
-                  </span>
-                </div>
-              </div>
-
-              {/* ITEMS SPECS */}
-              <div className="py-2 border-b border-black border-dashed">
-                <div className="flex justify-between items-center mb-1 text-[10px] font-semibold font-mono">
-                  <span>ITEM</span>
-                  <span>QYT: {totalQty} PCS</span>
-                </div>
-
-                <div className="space-y-2">
-                  {activeItems.length > 0 ? (
-                    activeItems.map((item) => (
-                      <div
-                        key={item.name}
-                        className="flex justify-between items-center font-medium text-sm gap-2"
-                      >
-                        <span>{item.name}</span>
-                        <span className="font-mono shrink-0">x{item.qty}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-xs italic text-neutral-400 text-center py-1">
-                      (Belum ada barang dipilih)
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Notes Section */}
-              {notes && (
-                <div className="py-1.5 border-b border-black border-dashed overflow-hidden">
-                  <p className="text-[9px] font-bold text-neutral-600 uppercase mb-0.5">
-                    NOTES:
-                  </p>
-                  <p className="text-sm leading-snug whitespace-pre-wrap break-words max-w-full">
-                    {notes}
-                  </p>
-                </div>
-              )}
-              {/* Tracking QR Code */}
-              {/* <div className="pt-2 pb-1 text-center flex flex-col items-center space-y-0.5">
-                <QRCodeSVG
-                  value={
-                    origin
-                      ? `${origin}/track?id=${ticketId}`
-                      : `https://tttm.haga.my.id/track?id=${ticketId}`
-                  }
-                  size={140}
-                  level="M"
-                  className="mx-auto my-1.5"
-                />
-                <p className="text-[9px] font-mono text-neutral-900 font-bold uppercase tracking-tight pt-0.5">
-                  Tracking Code: {ticketId}
-                </p>
-                <p className="text-[10px] font-mono text-neutral-600 font-semibold uppercase tracking-tight">
-                  Scan to Track Bag Status
-                </p>
-              </div> */}
-
-              {/* Timestamp */}
-              <div className="py-1 text-center text-[10px]">
-                <span>Diprint {createdTime || "TODAY"}</span>
-                <p className="text-sm font-mono  font-bold uppercase tracking-tight ">
-                  {ticketId}
-                </p>
-              </div>
-            </div>
+            <ThermalReceipt
+              expressNumber={expressNumber}
+              pickupDate={pickupDate}
+              pickupTime={pickupTime}
+              customerName={customerName}
+              staffName={staffName}
+              items={activeItems}
+              totalQty={totalQty}
+              notes={notes}
+              trackingCode={ticketId}
+              printedTime={createdTime}
+              origin={origin}
+            />
           </CardContent>
         </Card>
       </div>

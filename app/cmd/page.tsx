@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/client";
-import { QRCodeSVG } from "qrcode.react";
+import { ThermalReceipt } from "@/components/thermal-receipt";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -196,6 +196,18 @@ export default function CmdPage() {
 
     loadHistory();
 
+    // Auto-refresh when tab comes into focus or visibility changes
+    const handleFocus = () => {
+      loadHistory();
+    };
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleFocus);
+
+    // Fallback polling every 10 seconds to ensure data is always fresh
+    const pollInterval = setInterval(() => {
+      loadHistory();
+    }, 10000);
+
     // Supabase Realtime Subscription (INSERT & UPDATE)
     let channel: ReturnType<typeof supabase.channel> | null = null;
     try {
@@ -257,6 +269,9 @@ export default function CmdPage() {
     }
 
     return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
+      clearInterval(pollInterval);
       if (channel) supabase.removeChannel(channel);
     };
   }, [historyDateFilter]);
@@ -520,7 +535,7 @@ export default function CmdPage() {
                     <th className="py-2.5 px-4">Waktu Pickup</th>
                     <th className="py-2.5 px-4">Staff</th>
                     <th className="py-2.5 px-4 text-right">Tanggal</th>
-                    <th className="py-2.5 px-3.5">Status</th>
+                    {/* <th className="py-2.5 px-3.5">Status</th> */}
                     <th className="py-2.5 px-4">Note</th>
                     <th className="py-2.5 px-6">Print</th>
                   </tr>
@@ -575,7 +590,7 @@ export default function CmdPage() {
                           );
                         })()}
                       </td>
-                      <td className="py-3 px-3.5 whitespace-nowrap">
+                      {/* <td className="py-3 px-3.5 whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => handleToggleStatus(item)}
@@ -606,7 +621,7 @@ export default function CmdPage() {
                             </>
                           )}
                         </button>
-                      </td>
+                      </td> */}
                       <td className="py-3 px-4 text-xs text-foreground leading-snug whitespace-pre-wrap break-words max-w-[200px]">
                         {item.notes ? (
                           <span>{item.notes}</span>
@@ -629,12 +644,16 @@ export default function CmdPage() {
                             variant="outline"
                             size="icon-lg"
                             onClick={() => {
-                              const pDate = item.pickupDate ? formatDisplayDate(item.pickupDate) : "";
+                              const pDate = item.pickupDate ? formatFullDisplayDate(item.pickupDate) : "";
                               const pTime = item.pickupTime ? ` ${item.pickupTime}` : "";
-                              const pStr = pDate ? ` - Pickup ${pDate}${pTime}` : "";
-                              handleCopyPosFormat(
-                                `Express#${item.expressNumber} by ${item.staffName || "Staff"} - ${item.customerName}${pStr}`
-                              );
+                              const pickupStr = pDate ? `Diambil ${pDate}${pTime}` : "";
+                              const parts = [
+                                `Express#${item.expressNumber} by ${item.staffName || "Staff"}`,
+                                item.customerName,
+                                pickupStr,
+                                item.notes?.trim(),
+                              ].filter(Boolean);
+                              handleCopyPosFormat(parts.join(" - "));
                             }}
                             className="text-[11px] font-medium text-foreground hover:bg-muted gap-1"
                             title="Salin untuk customer note"
@@ -647,7 +666,7 @@ export default function CmdPage() {
                   ))}
                   {history.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="py-12 text-center text-muted-foreground">
+                      <td colSpan={8} className="py-12 text-center text-muted-foreground">
                         <div className="flex flex-col items-center justify-center space-y-1.5">
                           <div className="size-10 rounded-full bg-muted/40 flex items-center justify-center mb-1 text-muted-foreground/60">
                             <Clock className="size-5" />
@@ -679,105 +698,19 @@ export default function CmdPage() {
       {/* HIDDEN THERMAL RECEIPT FOR REPRINTING */}
       {reprintItem && (
         <div className="hidden print:block">
-          <div
-            id="thermal-receipt"
-            style={{ width: "210px" }}
-            className="bg-white text-black p-3.5 text-xs leading-snug select-none mx-auto"
-          >
-            <div className="text-center border-black border-dashed flex flex-col items-center">
-              <img
-                src="/tttm.jpg"
-                alt="Ticket to the Moon Logo"
-                className="h-auto w-full mx-auto mb-1 object-contain mix-blend-multiply"
-              />
-              <p className="font-semibold text-lg py-1 inline-block font-mono">
-                Express #{reprintItem.expressNumber}
-              </p>
-            </div>
-
-            <div className="text-center border-t border-black border-dashed pt-2">
-              <p className="text-[10px] uppercase font-bold text-neutral-600 tracking-wider">
-                Pickup Date
-              </p>
-              <p className="text-xs font-bold mt-0.5 text-black">
-                {formatFullDisplayDate(reprintItem.pickupDate)}
-              </p>
-              <p className="text-[11px] font-bold text-neutral-900">
-                {reprintItem.pickupTime || "-"}
-              </p>
-            </div>
-
-            <div className="py-1.5 border-b border-black border-dashed space-y-1 text-[11px]">
-              <div className="flex justify-between gap-3 font-mono">
-                <span className="text-neutral-600 shrink-0">CUSTOMER:</span>
-                <span className="font-semibold uppercase text-right break-words">
-                  {reprintItem.customerName || "-"}
-                </span>
-              </div>
-              <div className="flex justify-between gap-3 font-mono">
-                <span className="text-neutral-600 shrink-0">STAFF:</span>
-                <span className="font-semibold uppercase text-right break-words">
-                  {reprintItem.staffName || "-"}
-                </span>
-              </div>
-            </div>
-
-            <div className="py-2 border-b border-black border-dashed">
-              <div className="flex justify-between items-center mb-1 text-[10px] font-semibold text-neutral-600">
-                <span>ITEM</span>
-                <span>QYT: {reprintItem.totalQty} PCS</span>
-              </div>
-
-              <div className="space-y-1.5">
-                {reprintItem.items.map((item) => (
-                  <div
-                    key={item.name}
-                    className="flex justify-between items-center font-medium text-xs gap-2"
-                  >
-                    <span>{item.name}</span>
-                    <span className="font-mono shrink-0">x{item.qty}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {reprintItem.notes && (
-              <div className="py-1.5 border-b border-black border-dashed overflow-hidden">
-                <p className="text-[9px] font-bold text-neutral-600 uppercase mb-0.5">NOTES:</p>
-                <p className="text-xs leading-snug whitespace-pre-wrap break-words max-w-full">
-                  {reprintItem.notes}
-                </p>
-              </div>
-            )}
-
-            <div className="pt-2 pb-1 text-center flex flex-col items-center space-y-0.5">
-              <QRCodeSVG
-                value={
-                  origin
-                    ? `${origin}/track?id=${reprintItem.trackingCode ||
-                    generateTrackingCode(reprintItem.expressNumber)
-                    }`
-                    : `https://tttm.haga.my.id/track?id=${reprintItem.trackingCode ||
-                    generateTrackingCode(reprintItem.expressNumber)
-                    }`
-                }
-                size={140}
-                level="M"
-                className="mx-auto my-1.5"
-              />
-              <p className="text-[9px] font-mono text-neutral-900 font-bold uppercase tracking-tight pt-0.5">
-                Tracking Code:{" "}
-                {reprintItem.trackingCode || generateTrackingCode(reprintItem.expressNumber)}
-              </p>
-              <p className="text-[10px] font-mono text-neutral-600 font-semibold uppercase tracking-tight">
-                Scan to Track Bag Status
-              </p>
-            </div>
-
-            <div className="py-1 text-center text-[10px] text-neutral-600">
-              <span>{reprintItem.printedTime || "TODAY"}</span>
-            </div>
-          </div>
+          <ThermalReceipt
+            expressNumber={reprintItem.expressNumber}
+            pickupDate={reprintItem.pickupDate}
+            pickupTime={reprintItem.pickupTime}
+            customerName={reprintItem.customerName}
+            staffName={reprintItem.staffName}
+            items={reprintItem.items}
+            totalQty={reprintItem.totalQty}
+            notes={reprintItem.notes}
+            trackingCode={reprintItem.trackingCode || generateTrackingCode(reprintItem.expressNumber)}
+            printedTime={reprintItem.printedTime}
+            origin={origin}
+          />
         </div>
       )}
     </main>

@@ -25,7 +25,7 @@ function LoginForm() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     if (!email || !password) {
-      toast.error("Silakan isi email dan password staff");
+      toast.error("Please enter email and password");
       return;
     }
 
@@ -39,15 +39,15 @@ function LoginForm() {
       });
 
       if (error) {
-        setErrorMessage(error.message || "Email atau password salah");
-        toast.error("Gagal masuk: " + (error.message || "Kredensial tidak valid"));
+        setErrorMessage(error.message || "Invalid email or password");
+        toast.error("Failed to sign in: " + (error.message || "Invalid credentials"));
       } else if (data.user) {
-        toast.success("Berhasil masuk!");
+        toast.success("Signed in successfully!");
         router.push(redirectTo);
         router.refresh();
       }
     } catch (err: any) {
-      setErrorMessage(err?.message || "Terjadi kesalahan saat masuk");
+      setErrorMessage(err?.message || "An error occurred while signing in");
       toast.error("Login Error: " + (err?.message || err));
     } finally {
       setLoading(false);
@@ -59,21 +59,13 @@ function LoginForm() {
       <div className="w-full max-w-md space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-3">
-          <div className="flex justify-center">
-            <img src="/tttm_wordmark_dark.png" alt="TTTM Logo" className="h-8 w-auto" />
-          </div>
-          <h1 className="text-xl font-bold tracking-tight">Staff Portal Login</h1>
-          <p className="text-xs text-muted-foreground">
-            Area khusus staff internal Ticket to the Moon.
-          </p>
         </div>
-
         {/* Login Card */}
-        <Card className="rounded-2xl border shadow-xs bg-background">
+        <Card>
           <CardHeader className="space-y-1 text-center pb-4">
-            <CardTitle className="text-base font-bold">Masuk ke Akun Staff</CardTitle>
+            <CardTitle className="text-base font-bold">Sign In</CardTitle>
             <CardDescription className="text-xs">
-              Masukkan email dan password terdaftar Supabase Anda.
+              Enter your registered email and password.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -87,13 +79,13 @@ function LoginForm() {
 
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-muted-foreground block">
-                  Email Staff
+                  Email
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                   <Input
                     type="email"
-                    placeholder="staff@tickettothemoon.com"
+                    placeholder="tickettothemoonsunsetroad@gmail.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -133,10 +125,10 @@ function LoginForm() {
               >
                 {loading ? (
                   <>
-                    <Loader2 className="size-4 animate-spin" /> Memeriksa Kredensial...
+                    <Loader2 className="size-4 animate-spin" /> Verifying credentials...
                   </>
                 ) : (
-                  "Masuk Sistem Internal"
+                  "Sign In"
                 )}
               </Button>
             </form>
@@ -145,7 +137,7 @@ function LoginForm() {
 
         {/* Footer Note */}
         <p className="text-[11px] text-center text-muted-foreground">
-          Untuk pelanggan yang ingin mengecek status pesanan, silakan gunakan halaman{" "}
+          For customers looking to check order status, please visit{" "}
           <a href="/track" className="text-primary font-semibold underline">
             Public Tracking
           </a>

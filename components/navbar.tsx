@@ -41,8 +41,8 @@ export function Navbar() {
     checkUser();
   }, []);
 
-  // Hide Navbar on public /track page
-  if (pathname?.startsWith("/track")) {
+  // Hide Navbar on public /track page and /login page
+  if (pathname?.startsWith("/track") || pathname?.startsWith("/login")) {
     return null;
   }
 
@@ -80,11 +80,11 @@ export function Navbar() {
       <div className="max-w-6xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
         {/* LEFT: Logo */}
         <Link href="/" className="flex items-center gap-2 shrink-0">
-          <img src="/tttmlogo.png" alt="TTTM Logo" className="size-8 sm:size-10 object-contain" />
+          <img src="/movementstock.png" alt="TTTM Logo" className="size-8 sm:size-10 object-contain" />
         </Link>
 
         {/* MIDDLE: Pages Navigation */}
-        <nav className="flex items-center gap-0.5 sm:gap-1 bg-muted/60 p-1 rounded-xl border text-xs bg-background shadow-2xs max-w-full overflow-x-auto">
+        <nav className="flex items-center gap-0.5 sm:gap-1 bg-muted/60 p-1 rounded-xl border text-xs bg-background  max-w-full overflow-x-auto">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
