@@ -140,7 +140,7 @@ function StaffCombobox({
                       onChange(query.trim());
                       setOpen(false);
                     }}
-                    className="w-full text-left px-2 py-1.5 hover:bg-muted rounded-sm text-xs text-primary font-semibold flex items-center justify-between"
+                    className="w-full text-left px-2 py-1.5 hover:bg-muted text-xs text-primary font-semibold flex items-center justify-between"
                   >
                     <span>Gunakan "{query.trim()}"</span>
                     <Plus className="size-3" />
@@ -608,7 +608,7 @@ export default function NotaExpressPage() {
           <CardHeader className="pb-3 flex flex-row items-center justify-between no-print">
             <CardTitle className="text-base flex items-center gap-2">Preview</CardTitle>
           </CardHeader>
-          <CardContent className="p-4 flex justify-center items-start overflow-y-auto max-h-[calc(100vh-160px)] rounded-b-xl">
+          <CardContent className="p-4 flex justify-center items-start overflow-y-auto max-h-[calc(100vh-160px)]">
             <ThermalReceipt
               expressNumber={expressNumber}
               pickupDate={pickupDate}
