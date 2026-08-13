@@ -23,8 +23,15 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Movement Stock",
+  manifest: "/manifest.webmanifest",
   icons: {
     icon: "/movementstock.png",
+    apple: "/movementstock.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Movement Stock",
   },
 };
 

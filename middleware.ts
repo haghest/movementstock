@@ -8,6 +8,21 @@ export async function middleware(request: NextRequest) {
     },
   });
 
+  const pathname = request.nextUrl.pathname;
+
+  // 1. Fast path: Bypass Supabase network call for static files, manifests, and assets
+  const isStaticOrAsset =
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api/public") ||
+    pathname.includes(".") ||
+    pathname.endsWith(".webmanifest") ||
+    pathname.endsWith(".json");
+
+  if (isStaticOrAsset) {
+    return response;
+  }
+
+  // 2. Perform Supabase auth check only for application routes
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || "",
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
@@ -37,16 +52,9 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const pathname = request.nextUrl.pathname;
-
-  // Allow public access to /track, /login, static assets, and manifest files
   const isPublicRoute =
     pathname.startsWith("/track") ||
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/api/public") ||
-    pathname.includes(".") ||
-    pathname === "/manifest.webmanifest";
+    pathname.startsWith("/login");
 
   // If user is not logged in and tries to access internal routes (/ or /cmd)
   if (!user && !isPublicRoute) {
@@ -65,6 +73,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|webmanifest|json)$).*)",
   ],
 };

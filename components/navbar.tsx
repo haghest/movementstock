@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { PackageCheck, SwatchBook, Receipt, LogOut, LogIn } from "lucide-react";
+import { PackageCheck, SwatchBook, Receipt, LogOut, LogIn, ReceiptText } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/client";
@@ -64,7 +64,7 @@ export function Navbar() {
       name: "Nota",
       shortName: "Nota",
       href: "/nota",
-      icon: Receipt,
+      icon: ReceiptText,
     },
     {
       name: "Express",
@@ -84,7 +84,7 @@ export function Navbar() {
         </Link>
 
         {/* MIDDLE: Pages Navigation */}
-        <nav className="flex items-center gap-0.5 sm:gap-1 bg-muted/60 p-1 rounded-xl border text-xs bg-background  max-w-full overflow-x-auto">
+        <nav className="flex items-center gap-0.5 sm:gap-1 bg-muted/60 p-1 rounded-xl border text-xs bg-background ' max-w-full overflow-x-auto">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;

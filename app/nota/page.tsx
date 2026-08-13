@@ -318,7 +318,7 @@ export default function NotaExpressPage() {
   const totalQty = activeItems.reduce((sum, item) => sum + item.qty, 0);
   const isPrintDisabled = totalQty === 0 || !customerName.trim() || !staffName.trim();
 
-  function handleReset() {
+  function resetForm() {
     generateNewTicketId();
     setQuantities({
       "Mini Backpack 15L": 0,
@@ -329,7 +329,14 @@ export default function NotaExpressPage() {
     });
     setCustomerName("");
     setCustomerPhone("");
+    setStaffName("");
+    setPickupDate(getLocalDateString());
+    setPickupTime("12:00");
     setNotes("");
+  }
+
+  function handleReset() {
+    resetForm();
     toast.success("Form di-reset", { position: "top-center" });
   }
 
@@ -404,6 +411,7 @@ export default function NotaExpressPage() {
     setTimeout(() => {
       window.print();
       setExpressNumber(nextExpress);
+      resetForm();
     }, 150);
   }
 
@@ -415,7 +423,7 @@ export default function NotaExpressPage() {
         <Card className="lg:col-span-6 no-print">
           <CardHeader className="pb-3 border-b">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2">
                 Input Pesanan
               </CardTitle>
               <div className="flex items-center gap-1.5 text-xs">
@@ -446,7 +454,7 @@ export default function NotaExpressPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {/* 1. JUMLAH BARANG */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <div className="flex justify-between items-center">
                 <label className="text-xs font-bold text-muted-foreground">Item</label>
                 <Badge variant={totalQty > 0 ? "default" : "outline"} className="text-[11px]">
@@ -454,20 +462,20 @@ export default function NotaExpressPage() {
                 </Badge>
               </div>
 
-              <div className="space-y-3 md:space-y-2">
+              <div className="space-y-1.5 md:space-y-2">
                 {BAG_ITEMS.map((bag) => {
                   const qty = quantities[bag];
                   const isSelected = qty > 0;
                   return (
                     <div
                       key={bag}
-                      className={`flex items-center font-medium justify-between border p-2 rounded-lg transition-all ${isSelected
+                      className={`flex items-center  justify-between border p-2 rounded-xl transition-all ${isSelected
                         ? "bg-accent border"
                         : "hover:bg-muted/50 border border-transparent"
                         }`}
                     >
                       <span
-                        className={`text-sm ${isSelected ? "font-semibold text-foreground" : "text-muted-foreground"
+                        className={`text-sm ${isSelected ? "font-medium text-foreground" : "text-muted-foreground"
                           }`}
                       >
                         {bag}
@@ -570,7 +578,7 @@ export default function NotaExpressPage() {
               </label>
               <Textarea
                 rows={2}
-                placeholder="Catatan warna, bordir, delivery, etc"
+                placeholder="Email customer, gosend, dll"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="text-xs min-h-[60px]"

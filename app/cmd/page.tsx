@@ -516,10 +516,9 @@ export default function CmdPage() {
               <div className="relative min-w-[200px] sm:w-72">
                 <Input
                   type="text"
-                  placeholder="Search name, express #, resi..."
+                  placeholder="Cari..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-8 text-xs"
                 />
               </div>
             </div>

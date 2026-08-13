@@ -90,7 +90,7 @@ export function ThermalReceipt({
       {/* PICKUP BADGE */}
       <div className="text-center border-black border-dashed">
         <p className="text-[10px] uppercase font-extrabold tracking-wider">
-          Pickup Date
+          DIAMBIL PADA
         </p>
         <p className="text-sm font-bold mt-0.5 text-black">
           {formatFullDisplayDate(pickupDate)}
@@ -103,7 +103,7 @@ export function ThermalReceipt({
       {/* Customer Info */}
       <div className="py-1.5 border-b border-black border-dashed space-y-1 text-sm font-medium mt-2">
         <div className="flex justify-between gap-3 font-mono">
-          <span className="shrink-0">CUSTOMER:</span>
+          <span className="shrink-0">CUST:</span>
           <span className="font-semibold uppercase text-right break-words">
             {customerName || "-"}
           </span>
@@ -169,9 +169,13 @@ export function ThermalReceipt({
 
         </div>
       )} */}
+      <div> <p className="text-[10px] font-mono font-bold text-center uppercase tracking-tight pt-1.5">
+        WHATSAPP
+      </p><img src="/qr.png" alt="Whatsapp" className="w-2/3 h-auto mx-auto object-contain mix-blend-multiply" /></div>
+
 
       {/* Timestamp */}
-      <div className="pt-1.5 text-center text-[10px]">
+      <div className=" text-center text-[10px]">
         <span>Diprint {printedTime || "TODAY"}</span>
         {trackingCode && !showQRCode && (
           <p className="text-sm font-mono font-bold uppercase tracking-tight">
