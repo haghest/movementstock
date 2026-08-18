@@ -122,6 +122,18 @@ function splitTimestamp(isoOrText?: string) {
   }
 }
 
+function getPrintTimestamp(item: CmdHistoryItem): number {
+  if (item.createdAt) {
+    const t = new Date(item.createdAt).getTime();
+    if (!isNaN(t)) return t;
+  }
+  if (item.printedTime) {
+    const t = new Date(item.printedTime).getTime();
+    if (!isNaN(t)) return t;
+  }
+  return 0;
+}
+
 export default function CmdPage() {
   const [history, setHistory] = useState<CmdHistoryItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -159,7 +171,7 @@ export default function CmdPage() {
           queryBuilder = queryBuilder
             .gte("created_at", startIso)
             .lte("created_at", endIso)
-            .order("express_number", { ascending: false });
+            .order("created_at", { ascending: false });
         }
 
         const { data, error } = await queryBuilder;
@@ -376,11 +388,14 @@ export default function CmdPage() {
       );
     })
     .sort((a, b) => {
-      if (sortOrder === "newest") {
-        return b.expressNumber - a.expressNumber;
-      } else {
-        return a.expressNumber - b.expressNumber;
+      const timeA = getPrintTimestamp(a);
+      const timeB = getPrintTimestamp(b);
+      if (timeA !== timeB) {
+        return sortOrder === "newest" ? timeB - timeA : timeA - timeB;
       }
+      return sortOrder === "newest"
+        ? b.expressNumber - a.expressNumber
+        : a.expressNumber - b.expressNumber;
     });
 
   return (
