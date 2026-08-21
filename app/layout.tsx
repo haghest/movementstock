@@ -9,10 +9,8 @@ import { ModeToggle } from "@/components/toggle-theme";
 import { Navbar } from "@/components/navbar";
 import Script from "next/script";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
@@ -48,7 +46,6 @@ export default function RootLayout({
         "h-full",
         "antialiased",
         inter.variable,
-        geistSans.variable,
         geistMono.variable,
         "font-sans"
       )}

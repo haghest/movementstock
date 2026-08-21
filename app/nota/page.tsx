@@ -250,43 +250,55 @@ export default function NotaExpressPage() {
   const [savedStaffs, setSavedStaffs] = useState<string[]>([]);
   const [origin, setOrigin] = useState("");
 
+  async function refreshLatestExpressNumber() {
+    try {
+      const todayStr = getLocalDateString();
+      const [year, month, day] = todayStr.split("-").map(Number);
+      const startLocal = new Date(year, month - 1, day, 0, 0, 0, 0);
+      const endLocal = new Date(year, month - 1, day, 23, 59, 59, 999);
+
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("cmd_express_history")
+        .select("express_number")
+        .gte("created_at", startLocal.toISOString())
+        .lte("created_at", endLocal.toISOString())
+        .order("express_number", { ascending: false });
+
+      if (data && data.length > 0) {
+        const maxNum = Math.max(...data.map((row) => Number(row.express_number) || 0));
+        setExpressNumber(maxNum + 1);
+      } else {
+        setExpressNumber(1);
+      }
+    } catch (err) {
+      console.warn("Error fetching latest express number:", err);
+    }
+  }
+
   useEffect(() => {
     setOrigin(window.location.origin);
     generateNewTicketId();
     const today = getLocalDateString();
     setPickupDate(today);
 
-    // Fetch latest express number from Supabase
-    const supabase = createClient();
-    async function fetchLatestExpressNumber() {
-      try {
-        const [year, month, day] = today.split("-").map(Number);
-        const startLocal = new Date(year, month - 1, day, 0, 0, 0, 0);
-        const endLocal = new Date(year, month - 1, day, 23, 59, 59, 999);
+    refreshLatestExpressNumber();
 
-        const { data } = await supabase
-          .from("cmd_express_history")
-          .select("express_number")
-          .gte("created_at", startLocal.toISOString())
-          .lte("created_at", endLocal.toISOString())
-          .order("express_number", { ascending: false });
-
-        if (data && data.length > 0) {
-          const maxNum = Math.max(...data.map((row) => row.express_number));
-          setExpressNumber(maxNum + 1);
-        } else {
-          setExpressNumber(1);
-        }
-      } catch (err) {
-        console.warn("Error fetching latest express number:", err);
-      }
-    }
-    fetchLatestExpressNumber();
+    const handleFocus = () => {
+      refreshLatestExpressNumber();
+    };
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleFocus);
 
     setSavedStaffs([
       "Angga", "Ari", "Avita", "Dek Run", "Evita", "Gus De", "Haga",
       "Ivanna", "Merry", "Nita", "Nyom", "Ocha", "Rama", "Siyut", "Yayuk"
     ]);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
+    };
   }, []);
 
   function generateNewTicketId() {
@@ -333,6 +345,7 @@ export default function NotaExpressPage() {
     setPickupDate(getLocalDateString());
     setPickupTime("12:00");
     setNotes("");
+    refreshLatestExpressNumber();
   }
 
   function handleReset() {
@@ -574,11 +587,11 @@ export default function NotaExpressPage() {
             {/* 4. CATATAN */}
             <div className="space-y-1">
               <label className="text-xs font-semibold text-muted-foreground">
-                Catatan Detail (Opsional)
+                Internal Note
               </label>
               <Textarea
                 rows={2}
-                placeholder="Email customer, gosend, dll"
+
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="text-xs min-h-[60px]"

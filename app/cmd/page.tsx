@@ -399,7 +399,7 @@ export default function CmdPage() {
     });
 
   return (
-    <main className="flex-1 px-4 py-4  max-w-6xl mx-auto w-full">
+    <main className="flex-1 px-4 xl:px-0 py-4 max-w-6xl mx-auto w-full">
       {/* TODAY'S & HISTORICAL EXPRESS TABLE */}
       <section className="no-print">
         <Card className="overflow-hidden bg-background">
@@ -436,46 +436,46 @@ export default function CmdPage() {
                         setHistoryDateFilter(e.target.value);
                       }
                     }}
-                    className="h-7 text-xs bg-background border shadow-2xs rounded-lg px-2 w-32 cursor-pointer"
+                    className=" bg-background border   w-32 cursor-pointer"
                   />
                   <Button
                     variant={historyDateFilter === getLocalDateString() ? "default" : "ghost"}
-                    size="sm"
+
                     onClick={() => setHistoryDateFilter(getLocalDateString())}
-                    className="h-7 px-2.5 text-xs rounded-lg font-medium"
+                    className="px-2.5"
                   >
                     Hari Ini
                   </Button>
                   <Button
                     variant={historyDateFilter === "all" ? "default" : "ghost"}
-                    size="sm"
+
                     onClick={() => setHistoryDateFilter("all")}
-                    className="h-7 px-2.5 text-xs rounded-lg font-medium"
+                    className="px-2.5 "
                   >
                     Semua
                   </Button>
                 </div>
 
                 {/* Filter & Sort Button Group */}
-                <div className="flex items-center gap-0.5 bg-background border p-0.5 rounded-xl shadow-2xs">
-                  {/* Filter Popover Dropdown */}
+                <div className="flex items-center gap-0.5 bg-background border p-0.5 rounded-xl">
+                  {/* Filter Popover Dropdown
                   <Popover open={filterOpen} onOpenChange={setFilterOpen}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground gap-1.5 font-medium rounded-lg"
+                        className="h-7 px-2.5 text-muted-foreground hover:text-foreground gap-1.5"
                       >
                         <ListFilter className="size-3.5" />
                         <span>Filter</span>
                         {statusFilter !== "all" && (
-                          <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.2 rounded-full font-bold">
+                          <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.2 ">
                             {statusFilter === "processing" ? "Diproses" : statusFilter === "ready" ? "Siap Pickup" : "Selesai"}
                           </span>
                         )}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent align="start" className="w-52 p-1.5 rounded-2xl shadow-xl border">
+                    <PopoverContent align="start" className="w-52">
                       <div className="space-y-0.5">
                         {[
                           { id: "all", label: "Semua", count: history.length },
@@ -508,20 +508,19 @@ export default function CmdPage() {
                         })}
                       </div>
                     </PopoverContent>
-                  </Popover>
+                  </Popover> */}
 
-                  <div className="h-4 w-px bg-border shrink-0" />
+                  {/* <div className="h-4 w-px bg-border shrink-0" /> */}
 
                   {/* Sort Button */}
                   <Button
                     variant="ghost"
-                    size="sm"
                     onClick={() => setSortOrder((prev) => (prev === "newest" ? "oldest" : "newest"))}
-                    className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground gap-1.5 font-medium rounded-lg"
+                    className=" px-2.5 text-muted-foreground hover:text-foreground gap-1.5 "
                   >
                     <ArrowUpDown className="size-3.5" />
                     <span>Sort</span>
-                    <span className="text-[11px] text-muted-foreground/70 font-normal">
+                    <span className="text-[11px] text-muted-foreground/70 ">
                       ({sortOrder === "newest" ? "Terbaru" : "Terlama"})
                     </span>
                   </Button>
@@ -543,15 +542,15 @@ export default function CmdPage() {
               <table className="w-full text-xs text-left border-collapse">
                 <thead>
                   <tr className="border-y border-border/60 bg-muted/20 text-[11px] text-muted-foreground font-normal whitespace-nowrap">
-                    <th className="py-2.5 px-6">Express</th>
+                    <th className="py-2.5 px-6">Exp</th>
                     <th className="py-2.5 px-4">Nama</th>
-                    <th className="py-2.5 px-4">Item Custom</th>
-                    <th className="py-2.5 px-4">Waktu Pickup</th>
+                    <th className="py-2.5 px-4">Item</th>
+                    <th className="py-2.5 px-4">Dibuat</th>
+                    <th className="py-2.5 px-4">Pickup</th>
                     <th className="py-2.5 px-4">Staff</th>
-                    <th className="py-2.5 px-4 text-right">Tanggal</th>
                     {/* <th className="py-2.5 px-3.5">Status</th> */}
                     <th className="py-2.5 px-4">Note</th>
-                    <th className="py-2.5 px-6">Print</th>
+                    <th className="py-2.5 px-6 text-right">Print</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -564,32 +563,15 @@ export default function CmdPage() {
                         {item.customerName}
                       </td>
                       <td className="py-3 px-4">
-                        <div className="flex flex-wrap gap-1">
+                        <ul className="space-y-0.5 text-xs text-foreground font-medium ">
                           {item.items.map((it, idx) => (
-                            <Badge
-                              key={idx}
-                              variant="secondary"
-                              className="text-xs font-medium bg-muted/60 text-foreground border-border/40 whitespace-nowrap"
-                            >
-                              {it.name} (x{it.qty})
-                            </Badge>
+                            <li key={idx} className="whitespace-nowrap"><span className="font-bold px-1.5">{it.qty}</span>
+                              {it.name}
+                            </li>
                           ))}
-                        </div>
+                        </ul>
                       </td>
-                      <td className="py-3 px-4 text-foreground font-medium whitespace-nowrap">
-                        <div className="flex flex-col text-xs leading-tight">
-                          <span>{formatDisplayDate(item.pickupDate)}</span>
-                          {item.pickupTime && (
-                            <span className="text-[11px] text-muted-foreground font-normal mt-0.5">
-                              {item.pickupTime}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-muted-foreground capitalize whitespace-nowrap">
-                        {item.staffName || "-"}
-                      </td>
-                      <td className="py-3 px-4 text-right whitespace-nowrap">
+                      <td className="py-3 px-4 whitespace-nowrap">
                         {(() => {
                           const { date, time } = splitTimestamp(item.createdAt || item.printedTime);
                           return (
@@ -603,6 +585,19 @@ export default function CmdPage() {
                             </div>
                           );
                         })()}
+                      </td>
+                      <td className="py-3 px-4 text-foreground font-medium whitespace-nowrap">
+                        <div className="flex flex-col text-xs leading-tight">
+                          <span>{formatDisplayDate(item.pickupDate)}</span>
+                          {item.pickupTime && (
+                            <span className="text-[11px] text-muted-foreground font-normal mt-0.5">
+                              {item.pickupTime}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-muted-foreground capitalize whitespace-nowrap">
+                        {item.staffName || "-"}
                       </td>
                       {/* <td className="py-3 px-3.5 whitespace-nowrap">
                         <button
