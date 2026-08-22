@@ -419,7 +419,7 @@ export default function CmdPage() {
                 </h3>
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="icon"
                   onClick={() => {
                     window.open(
                       "/cmd/widget",
@@ -427,11 +427,11 @@ export default function CmdPage() {
                       "width=380,height=540,resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no"
                     );
                   }}
-                  className="h-7 text-xs font-bold gap-1.5 text-primary border-primary/30 hover:bg-primary/10"
-                  title="Buka Jendela Melayang / Pop-out Widget untuk disandingkan dengan Odoo"
+                  className="  gap-1.5"
+                  title="Express Note"
                 >
                   <ExternalLink className="size-3.5" />
-                  <span>Pop-out Widget</span>
+
                 </Button>
               </div>
               {history.length > 0 && (

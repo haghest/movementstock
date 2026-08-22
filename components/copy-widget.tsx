@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
 import {
   Copy,
   Check,
@@ -14,7 +13,6 @@ import {
   ExternalLink,
   Clock,
   RefreshCw,
-  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -151,10 +149,6 @@ export function CopyWidget({ standalone = false, className }: CopyWidgetProps) {
                 printedTime: row.printed_time || "",
               };
               setHistory((prev) => [mappedItem, ...prev.filter((h) => h.id !== mappedItem.id)]);
-              toast.success(`⭐️ Express #${row.express_number} Baru Dibuat!`, {
-                position: "top-center",
-                description: `${row.customer_name} oleh ${row.staff_name}`,
-              });
             }
           }
         )
@@ -175,9 +169,6 @@ export function CopyWidget({ standalone = false, className }: CopyWidgetProps) {
     const text = generateCopyText(item);
     navigator.clipboard.writeText(text);
     setCopiedId(item.id);
-    toast.success(`Disalin: Express #${item.expressNumber}`, {
-      position: "top-center",
-    });
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -185,7 +176,7 @@ export function CopyWidget({ standalone = false, className }: CopyWidgetProps) {
     window.open(
       "/cmd/widget",
       "ExpressCopyWidget",
-      "width=380,height=540,resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no"
+      "width=350,height=540,resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no"
     );
   };
 
@@ -201,59 +192,56 @@ export function CopyWidget({ standalone = false, className }: CopyWidgetProps) {
   });
 
   return (
-    <Card className={cn("w-full shadow-md bg-background border", className)}>
-      <CardHeader className="p-3 pb-2 border-b bg-muted/30 flex flex-row items-center justify-between space-y-0">
+    <Card className={cn("w-full", className)}>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <div className="flex items-center gap-2">
-          <CardTitle className="text-xs font-bold flex items-center gap-1.5 text-foreground">
-            <Sparkles className="size-3.5 text-amber-500 animate-pulse" />
-            <span>Copy Express Note</span>
-          </CardTitle>
-          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-bold">
-            {filtered.length} Hari Ini
+          <CardTitle>Express Note</CardTitle>
+          <Badge variant="secondary" className="text-xs">
+            {filtered.length} express
           </Badge>
         </div>
 
         <div className="flex items-center gap-1">
           <Button
-            variant="ghost"
-            size="icon-sm"
+            variant="outline"
+            size="icon-lg"
             onClick={loadHistory}
             disabled={isRefreshing}
-            className="size-7 text-muted-foreground hover:text-foreground"
-            title="Refresh data"
+            className="size-7"
+            title="Refresh"
           >
-            <RefreshCw className={cn("size-3.5", isRefreshing && "animate-spin")} />
+            <RefreshCw className={cn("size-3.5 text-muted-foreground", isRefreshing && "animate-spin")} />
           </Button>
 
           {!standalone && (
             <Button
-              variant="outline"
-              size="icon-sm"
+              variant="ghost"
+              size="icon-lg"
               onClick={openPopout}
-              className="size-7 text-xs font-semibold gap-1 text-primary border-primary/30 hover:bg-primary/10"
-              title="Buka Jendela Melayang (Pop-out)"
+              className="size-7"
+              title="Buka Pop-out Widget"
             >
-              <ExternalLink className="size-3.5" />
+              <ExternalLink className="size-3.5 text-muted-foreground" />
             </Button>
           )}
         </div>
       </CardHeader>
 
-      <CardContent className="p-2 space-y-2">
+      <CardContent className="space-y-2">
         {/* Quick Search */}
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Cari nama / #..."
+            placeholder="Cari..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-8 text-xs pl-8 pr-2 bg-background"
+            className="h-8 text-xs pl-8"
           />
         </div>
 
         {/* List of Today Expresses */}
-        <div className="space-y-1.5 max-h-[360px] overflow-y-auto pr-0.5 select-none">
+        <div className="space-y-2 max-h-[380px] overflow-y-auto">
           {filtered.map((item) => {
             const isCopied = copiedId === item.id;
             const formattedText = generateCopyText(item);
@@ -261,53 +249,38 @@ export function CopyWidget({ standalone = false, className }: CopyWidgetProps) {
             return (
               <div
                 key={item.id}
-                className={cn(
-                  "p-2.5 rounded-xl border text-xs transition-all flex flex-col gap-1.5",
-                  isCopied
-                    ? "bg-emerald-500/10 border-emerald-500/40"
-                    : "bg-card hover:bg-muted/40 border-border"
-                )}
+                className="p-2 rounded-lg border border-border bg-card text-xs flex flex-col gap-1.5"
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <Badge variant="default" className="text-[11px] font-black shrink-0 px-2 py-0.5">
+                    <Badge variant="outline" className="text-xs font-semibold shrink-0">
                       #{item.expressNumber}
                     </Badge>
-                    <span className="font-bold text-foreground capitalize truncate">
+                    <span className="font-medium text-foreground capitalize truncate">
                       {item.customerName}
                     </span>
-                    <span className="text-[11px] text-muted-foreground truncate">
+                    <span className="text-muted-foreground truncate text-[11px]">
                       ({item.staffName || "Staff"})
                     </span>
                   </div>
 
                   <Button
                     size="sm"
-                    variant={isCopied ? "default" : "outline"}
+                    variant="outline"
                     onClick={() => handleCopy(item)}
-                    className={cn(
-                      "h-8 px-3 text-xs font-bold shrink-0 gap-1.5 rounded-lg active:scale-95 transition-transform",
-                      isCopied
-                        ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                        : "bg-primary text-primary-foreground hover:bg-primary/90"
-                    )}
+                    className="h-7 text-xs px-2.5 shrink-0 gap-1.5 font-medium transition-all"
                   >
                     {isCopied ? (
-                      <>
-                        <Check className="size-3.5" />
-                        <span>Tersalin!</span>
-                      </>
+                      <Check className="size-3.5 text-emerald-600 transition-transform animate-in fade-in zoom-in-75 duration-200" />
                     ) : (
-                      <>
-                        <Copy className="size-3.5" />
-                        <span>COPY NOTE</span>
-                      </>
+                      <Copy className="size-3.5 transition-transform animate-in fade-in duration-200" />
                     )}
+                    <span>Salin</span>
                   </Button>
                 </div>
 
                 {/* Preview text string */}
-                <div className="text-[11px] text-muted-foreground bg-muted/30 p-1.5 rounded-lg font-mono leading-tight break-words">
+                <div className="text-[11px] text-muted-foreground bg-muted/40 p-1.5 leading-tight break-words">
                   {formattedText}
                 </div>
               </div>
@@ -316,9 +289,8 @@ export function CopyWidget({ standalone = false, className }: CopyWidgetProps) {
 
           {filtered.length === 0 && (
             <div className="py-8 text-center text-xs text-muted-foreground space-y-1">
-              <Clock className="size-6 mx-auto opacity-40 mb-1" />
-              <p className="font-semibold text-foreground">Belum ada Express hari ini</p>
-              <p className="text-[11px]">Setiap nota yang diprint akan otomatis muncul di sini.</p>
+              <Clock className="size-5 mx-auto opacity-50 mb-1" />
+              <p className="font-medium">Belum ada express hari ini</p>
             </div>
           )}
         </div>

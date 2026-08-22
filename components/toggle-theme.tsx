@@ -17,8 +17,8 @@ export function ModeToggle() {
   const { setTheme } = useTheme();
   const pathname = usePathname();
 
-  // Hide dark mode toggle on /track page
-  if (pathname?.startsWith("/track")) {
+  // Hide dark mode toggle on /track page and /cmd/widget
+  if (pathname?.startsWith("/track") || pathname?.startsWith("/cmd/widget")) {
     return null;
   }
 

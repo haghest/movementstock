@@ -41,8 +41,8 @@ export function Navbar() {
     checkUser();
   }, []);
 
-  // Hide Navbar on public /track page and /login page
-  if (pathname?.startsWith("/track") || pathname?.startsWith("/login")) {
+  // Hide Navbar on public /track page, /login page, and /cmd/widget
+  if (pathname?.startsWith("/track") || pathname?.startsWith("/login") || pathname?.startsWith("/cmd/widget")) {
     return null;
   }
 
