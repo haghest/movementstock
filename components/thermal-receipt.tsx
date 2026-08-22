@@ -69,7 +69,7 @@ export function ThermalReceipt({
     <div
       id="thermal-receipt"
       style={{ width: "210px" }}
-      className="bg-white text-black p-3.5 shadow-lg border border-neutral-300 text-xs leading-snug select-none mx-auto print:border-none print:shadow-none"
+      className="bg-white text-black p-3.5 shadow-lg border border-neutral-300 text-xs leading-snug select-none mx-auto print:border-none print:shadow-none font-mono"
     >
       {/* Header Logo */}
       {/* {showLogo && (
@@ -89,7 +89,7 @@ export function ThermalReceipt({
 
       {/* PICKUP BADGE */}
       <div className="text-center border-black border-dashed">
-        <p className="text-[10px] uppercase font-extrabold tracking-wider">
+        <p className="text-[12px] uppercase font-extrabold tracking-wider">
           DIAMBIL PADA
         </p>
         <p className="text-sm font-bold mt-0.5 text-black">
@@ -119,19 +119,23 @@ export function ThermalReceipt({
       {/* ITEMS SPECS */}
       <div className="py-2 border-b border-black border-dashed">
         <div className="flex justify-between items-center mb-1 text-[10px] font-semibold font-mono">
-          <span>ITEM</span>
-          <span>QTY: {calculatedTotalQty} PCS</span>
+          <div className="flex gap-2.5">
+            <span>QYT</span>
+            <span>ITEM</span>
+          </div>
+
+          {/* <span>TOTAL: {calculatedTotalQty} PCS</span> */}
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-0.5">
           {activeItems.length > 0 ? (
             activeItems.map((item) => (
               <div
                 key={item.name}
-                className="flex justify-between items-center font-medium text-sm gap-2"
+                className="flex items-start font-medium text-sm gap-5"
               >
-                <span>{item.name}</span>
-                <span className="font-mono shrink-0">x{item.qty}</span>
+                <span className="font-mono shrink-0 font-bold">{item.qty}</span>
+                <span className="tracking-tight">{item.name}</span>
               </div>
             ))
           ) : (
@@ -146,9 +150,9 @@ export function ThermalReceipt({
       {notes && (
         <div className="py-1.5 border-b border-black border-dashed overflow-hidden">
           <p className="text-[10px] font-bold  uppercase mb-0.5 font-mono">
-            NOTES
+            INTERNAL NOTES
           </p>
-          <p className="text-sm leading-snug whitespace-pre-wrap break-words max-w-full">
+          <p className="text-sm leading-snug whitespace-pre-wrap break-words max-w-full ">
             {notes}
           </p>
         </div>
@@ -169,13 +173,13 @@ export function ThermalReceipt({
 
         </div>
       )} */}
-      <div> <p className="text-[10px] font-mono font-bold text-center uppercase tracking-tight pt-1.5">
+      {/* <div> <p className="text-[10px] font-mono font-bold text-center uppercase tracking-tight pt-1.5">
         WHATSAPP
-      </p><img src="/qr.png" alt="Whatsapp" className="w-2/3 h-auto mx-auto object-contain mix-blend-multiply" /></div>
+      </p><img src="/qr.png" alt="Whatsapp" className="w-2/3 h-auto mx-auto object-contain mix-blend-multiply" /></div> */}
 
 
       {/* Timestamp */}
-      <div className=" text-center text-[10px]">
+      <div className=" text-center text-[10px] pt-2">
         <span>Diprint {printedTime || "TODAY"}</span>
         {trackingCode && !showQRCode && (
           <p className="text-sm font-mono font-bold uppercase tracking-tight">
