@@ -31,7 +31,7 @@ function formatFullDisplayDate(dateStr?: string) {
     return d.toLocaleDateString("id-ID", {
       day: "numeric",
       month: "long",
-      year: "numeric",
+      year: "numeric"
     });
   } catch {
     return dateStr;
@@ -69,23 +69,23 @@ export function ThermalReceipt({
     <div
       id="thermal-receipt"
       style={{ width: "210px" }}
-      className="bg-white text-black p-3.5 shadow-lg border border-neutral-300 text-xs leading-snug select-none mx-auto print:border-none print:shadow-none font-mono"
+      className="bg-white text-black p-3.5 shadow-lg border border-neutral-300 text-xs leading-snug select-none mx-auto print:border-none print:shadow-none"
     >
       {/* Header Logo */}
-      {/* {showLogo && (
-        <div className="text-center border-b border-black border-dashed pb-2 flex flex-col items-center">
-          <img
+      {showLogo && (
+        <div className="text-center  border-black  pb-2 flex flex-col items-center">
+          {/* <img
             src="/tttm.jpg"
             alt="Ticket to the Moon Logo"
             className="h-auto w-full mx-auto mb-1 object-contain mix-blend-multiply"
-          />
+          /> */}
           {expressNumber !== undefined && (
-            <p className="font-semibold text-lg py-0.5 inline-block font-mono">
+            <p className="font-bold text-2xl inline-block ">
               Express #{expressNumber}
             </p>
           )}
         </div>
-      )} */}
+      )}
 
       {/* PICKUP BADGE */}
       <div className="text-center border-black border-dashed">
@@ -101,7 +101,7 @@ export function ThermalReceipt({
       </div>
 
       {/* Customer Info */}
-      <div className="py-1.5 border-b border-black border-dashed space-y-1 text-sm font-medium mt-2">
+      <div className="pb-1.5 border-b border-black border-dashed space-y-1 text-sm font-medium mt-2">
         <div className="flex justify-between gap-3 font-mono">
           <span className="shrink-0">CUST:</span>
           <span className="font-semibold uppercase text-right break-words">
@@ -120,11 +120,11 @@ export function ThermalReceipt({
       <div className="py-2 border-b border-black border-dashed">
         <div className="flex justify-between items-center mb-1 text-[10px] font-semibold font-mono">
           <div className="flex gap-2.5">
-            <span>QYT</span>
+            <span>QTY</span>
             <span>ITEM</span>
           </div>
 
-          {/* <span>TOTAL: {calculatedTotalQty} PCS</span> */}
+          <span>TOTAL: {calculatedTotalQty} PCS</span>
         </div>
 
         <div className="space-y-0.5">
@@ -173,9 +173,9 @@ export function ThermalReceipt({
 
         </div>
       )} */}
-      {/* <div> <p className="text-[10px] font-mono font-bold text-center uppercase tracking-tight pt-1.5">
+      <div> <p className="text-[10px] font-mono font-bold text-center uppercase tracking-tight pt-1.5">
         WHATSAPP
-      </p><img src="/qr.png" alt="Whatsapp" className="w-2/3 h-auto mx-auto object-contain mix-blend-multiply" /></div> */}
+      </p><img src="/qr.png" alt="Whatsapp" className="w-2/3 h-auto mx-auto object-contain mix-blend-multiply" /></div>
 
 
       {/* Timestamp */}
