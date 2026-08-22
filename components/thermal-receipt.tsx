@@ -171,7 +171,7 @@ export function ThermalReceipt({
       )} */}
       <div> <p className="text-[10px] font-mono font-bold text-center uppercase tracking-tight pt-1.5">
         WHATSAPP
-      </p><img src="/qr.png" alt="Whatsapp" className="w-3/5 h-auto mx-auto object-contain mix-blend-multiply" /></div>
+      </p><img src="/qr.png" alt="Whatsapp" className="w-2/3 h-auto mx-auto object-contain mix-blend-multiply" /></div>
 
 
       {/* Timestamp */}
