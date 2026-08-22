@@ -17,8 +17,11 @@ import {
   ListFilter,
   Check,
   Copy,
+  ExternalLink,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CopyWidget } from "@/components/copy-widget";
 
 export const BAG_ITEMS = [
   "Mini Backpack 15L",
@@ -414,7 +417,22 @@ export default function CmdPage() {
                       ? "Semua Data Express"
                       : `Express Tanggal ${formatDisplayDate(historyDateFilter)}`}
                 </h3>
-
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    window.open(
+                      "/cmd/widget",
+                      "ExpressCopyWidget",
+                      "width=380,height=540,resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no"
+                    );
+                  }}
+                  className="h-7 text-xs font-bold gap-1.5 text-primary border-primary/30 hover:bg-primary/10"
+                  title="Buka Jendela Melayang / Pop-out Widget untuk disandingkan dengan Odoo"
+                >
+                  <ExternalLink className="size-3.5" />
+                  <span>Pop-out Widget</span>
+                </Button>
               </div>
               {history.length > 0 && (
                 <Badge variant="secondary" className="text-xs font-semibold px-2.5 py-0.5 rounded-full shrink-0">

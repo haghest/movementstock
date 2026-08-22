@@ -20,6 +20,7 @@ import {
   ChevronDown,
   Check,
   ChevronsUpDown,
+  ExternalLink,
 } from "lucide-react";
 import {
   Command,
@@ -620,6 +621,23 @@ export default function NotaExpressPage() {
         <Card className="col-span-1 lg:col-span-6 lg:sticky lg:top-6">
           <CardHeader className="pb-3 flex flex-row items-center justify-between no-print">
             <CardTitle className="text-base flex items-center gap-2">Preview</CardTitle>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                window.open(
+                  "/cmd/widget",
+                  "ExpressCopyWidget",
+                  "width=380,height=540,resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no"
+                );
+              }}
+              className="h-7 text-xs font-bold gap-1 text-primary border-primary/30 hover:bg-primary/10"
+              title="Buka Jendela Melayang / Pop-out Widget untuk disandingkan dengan Odoo"
+            >
+              <ExternalLink className="size-3.5" />
+              <span>Pop-out Widget</span>
+            </Button>
           </CardHeader>
           <CardContent className="p-4 flex justify-center items-start overflow-y-auto max-h-[calc(100vh-160px)]">
             <ThermalReceipt
