@@ -80,8 +80,8 @@ export function ThermalReceipt({
             className="h-auto w-full mx-auto mb-1 object-contain mix-blend-multiply"
           /> */}
           {expressNumber !== undefined && (
-            <p className="font-bold text-2xl inline-block ">
-              Express #{expressNumber}
+            <p className="font-bold text-2xl inline-block">
+              Express#{expressNumber}
             </p>
           )}
         </div>
@@ -89,8 +89,8 @@ export function ThermalReceipt({
 
       {/* PICKUP BADGE */}
       <div className="text-center border-black border-dashed">
-        <p className="text-[12px] uppercase font-extrabold tracking-wider">
-          DIAMBIL PADA
+        <p className="text-[12px] font-extrabold  uppercase tracking-wider">
+          Diambil Pada
         </p>
         <p className="text-sm font-bold mt-0.5 text-black">
           {formatFullDisplayDate(pickupDate)}
@@ -101,16 +101,16 @@ export function ThermalReceipt({
       </div>
 
       {/* Customer Info */}
-      <div className="pb-1.5 border-b border-black border-dashed space-y-1 text-sm font-medium mt-2">
-        <div className="flex justify-between gap-3 font-mono">
+      <div className="pb-1.5 border-b border-black border-dashed space-y-1 text-sm font-medium mt-2 font-mono">
+        <div className="flex justify-between gap-3">
           <span className="shrink-0">CUST:</span>
-          <span className="font-semibold uppercase text-right break-words">
+          <span className="font-bold uppercase text-right break-words">
             {customerName || "-"}
           </span>
         </div>
-        <div className="flex justify-between gap-3 font-mono">
+        <div className="flex justify-between gap-3">
           <span className="shrink-0">STAFF:</span>
-          <span className="font-semibold uppercase text-right break-words">
+          <span className="font-bold uppercase text-right break-words">
             {staffName || "-"}
           </span>
         </div>
@@ -118,8 +118,8 @@ export function ThermalReceipt({
 
       {/* ITEMS SPECS */}
       <div className="py-2 border-b border-black border-dashed">
-        <div className="flex justify-between items-center mb-1 text-[10px] font-semibold font-mono">
-          <div className="flex gap-2.5">
+        <div className="flex justify-between items-center mb-1 text-[11px] font-semibold font-mono">
+          <div className="flex gap-2">
             <span>QTY</span>
             <span>ITEM</span>
           </div>
@@ -127,12 +127,12 @@ export function ThermalReceipt({
           <span>TOTAL: {calculatedTotalQty} PCS</span>
         </div>
 
-        <div className="space-y-0.5">
+        <div className="space-y-1">
           {activeItems.length > 0 ? (
             activeItems.map((item) => (
               <div
                 key={item.name}
-                className="flex items-start font-medium text-sm gap-5"
+                className="flex items-start font-medium text-sm gap-[18]"
               >
                 <span className="font-mono shrink-0 font-bold">{item.qty}</span>
                 <span className="tracking-tight">{item.name}</span>
@@ -152,7 +152,7 @@ export function ThermalReceipt({
           <p className="text-[10px] font-bold  uppercase mb-0.5 font-mono">
             INTERNAL NOTES
           </p>
-          <p className="text-sm leading-snug whitespace-pre-wrap break-words max-w-full ">
+          <p className="text-sm leading-snug whitespace-pre-wrap break-words max-w-full font-medium">
             {notes}
           </p>
         </div>

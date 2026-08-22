@@ -5,10 +5,26 @@ import { createClient } from "@/lib/client";
 import { ThermalReceipt } from "@/components/thermal-receipt";
 
 import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import {
   Printer,
@@ -17,6 +33,8 @@ import {
   ListFilter,
   Check,
   Copy,
+  Trash2,
+  MoreHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -147,6 +165,10 @@ export default function CmdPage() {
   // States for reprint thermal receipt rendering
   const [reprintItem, setReprintItem] = useState<CmdHistoryItem | null>(null);
 
+  // States for delete express item
+  const [deleteTargetItem, setDeleteTargetItem] = useState<CmdHistoryItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   useEffect(() => {
     setOrigin(window.location.origin);
   }, []);
@@ -220,7 +242,7 @@ export default function CmdPage() {
       loadHistory();
     }, 10000);
 
-    // Supabase Realtime Subscription (INSERT & UPDATE)
+    // Supabase Realtime Subscription (INSERT, UPDATE & DELETE)
     let channel: ReturnType<typeof supabase.channel> | null = null;
     try {
       channel = supabase
@@ -272,6 +294,11 @@ export default function CmdPage() {
                     : h
                 )
               );
+            } else if (payload.eventType === "DELETE") {
+              const oldRow = payload.old;
+              if (oldRow && oldRow.id) {
+                setHistory((prev) => prev.filter((h) => h.id !== oldRow.id));
+              }
             }
           }
         )
@@ -287,6 +314,34 @@ export default function CmdPage() {
       if (channel) supabase.removeChannel(channel);
     };
   }, [historyDateFilter]);
+
+  async function handleDeleteConfirm() {
+    if (!deleteTargetItem) return;
+    setIsDeleting(true);
+    const targetId = deleteTargetItem.id;
+    const targetExpress = deleteTargetItem.expressNumber;
+
+    // Optimistic state update
+    setHistory((prev) => prev.filter((h) => h.id !== targetId));
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("cmd_express_history")
+      .delete()
+      .eq("id", targetId);
+
+    setIsDeleting(false);
+    setDeleteTargetItem(null);
+
+    if (error) {
+      console.error("Delete express error:", error);
+      toast.error("Gagal menghapus data dari Supabase");
+    } else {
+      toast.success(`Express #${targetExpress} berhasil dihapus`, {
+        position: "top-center",
+      });
+    }
+  }
 
   function handleReprint(item: CmdHistoryItem) {
     setReprintItem(item);
@@ -509,9 +564,6 @@ export default function CmdPage() {
                       </div>
                     </PopoverContent>
                   </Popover>
-
-                  <div className="h-4 w-px bg-border shrink-0" />
-
                   {/* Sort Button */}
                   <Button
                     variant="ghost"
@@ -549,9 +601,8 @@ export default function CmdPage() {
                     <th className="py-2.5 px-4">Waktu Pickup</th>
                     <th className="py-2.5 px-4">Staff</th>
                     <th className="py-2.5 px-4 text-right">Tanggal</th>
-                    {/* <th className="py-2.5 px-3.5">Status</th> */}
                     <th className="py-2.5 px-4">Note</th>
-                    <th className="py-2.5 px-6">Print</th>
+                    <th className="py-2.5 px-6 text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -604,38 +655,6 @@ export default function CmdPage() {
                           );
                         })()}
                       </td>
-                      {/* <td className="py-3 px-3.5 whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleStatus(item)}
-                          className={cn(
-                            "px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors flex items-center gap-1 cursor-pointer select-none",
-                            item.status === "ready"
-                              ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/20"
-                              : item.status === "completed"
-                                ? "bg-blue-500/10 text-blue-600 border-blue-500/30 hover:bg-blue-500/20"
-                                : "bg-amber-500/10 text-amber-600 border-amber-500/30 hover:bg-amber-500/20"
-                          )}
-                          title="Klik untuk ubah status pesanan"
-                        >
-                          {item.status === "ready" ? (
-                            <>
-                              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                              Siap Pickup
-                            </>
-                          ) : item.status === "completed" ? (
-                            <>
-                              <span className="size-1.5 rounded-full bg-blue-500" />
-                              Selesai
-                            </>
-                          ) : (
-                            <>
-                              <span className="size-1.5 rounded-full bg-amber-500" />
-                              Diproses
-                            </>
-                          )}
-                        </button>
-                      </td> */}
                       <td className="py-3 px-4 text-xs text-foreground leading-snug whitespace-pre-wrap break-words max-w-[200px]">
                         {item.notes ? (
                           <span>{item.notes}</span>
@@ -644,16 +663,7 @@ export default function CmdPage() {
                         )}
                       </td>
                       <td className="py-3 px-6 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <Button
-                            variant="outline"
-                            size="icon-lg"
-                            onClick={() => handleReprint(item)}
-                            className="text-[11px] font-medium text-foreground hover:bg-muted gap-1"
-                            title="Print Ulang"
-                          >
-                            <Printer className="size-3.5" />
-                          </Button>
+                        <ButtonGroup className="justify-end">
                           <Button
                             variant="outline"
                             size="icon-lg"
@@ -669,12 +679,42 @@ export default function CmdPage() {
                               ].filter(Boolean);
                               handleCopyPosFormat(parts.join(" - "));
                             }}
-                            className="text-[11px] font-medium text-foreground hover:bg-muted gap-1"
+                            className="text-[11px] font-medium text-foreground hover:bg-muted"
                             title="Salin untuk customer note"
                           >
                             <Copy className="size-3.5" />
                           </Button>
-                        </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="icon-lg"
+                                className="text-[11px] font-medium text-foreground hover:bg-muted"
+                                title="Opsi Lainnya"
+                              >
+                                <MoreHorizontal className="size-3.5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-40">
+                              <DropdownMenuItem
+                                onClick={() => handleReprint(item)}
+                                className="cursor-pointer"
+                              >
+                                <Printer className="size-3.5 mr-2" />
+                                <span>Print Ulang</span>
+                              </DropdownMenuItem>
+
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onClick={() => setDeleteTargetItem(item)}
+                                className="cursor-pointer"
+                              >
+                                <Trash2 className="size-3.5 mr-2" />
+                                <span>Hapus</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </ButtonGroup>
                       </td>
                     </tr>
                   ))}
@@ -697,7 +737,7 @@ export default function CmdPage() {
                   )}
                   {history.length > 0 && filteredHistory.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="py-10 text-center text-muted-foreground italic">
+                      <td colSpan={8} className="py-10 text-center text-muted-foreground italic">
                         Tidak ada data pesanan yang cocok dengan pencarian "{searchQuery}"
                       </td>
                     </tr>
@@ -727,6 +767,42 @@ export default function CmdPage() {
           />
         </div>
       )}
+
+      {/* DELETE CONFIRMATION DIALOG */}
+      <Dialog open={!!deleteTargetItem} onOpenChange={(open) => !open && setDeleteTargetItem(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-foreground">
+              Hapus Express #{deleteTargetItem?.expressNumber}?
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground pt-1">
+              Apakah Anda yakin ingin menghapus pesanan atas nama{" "}
+              <strong className="text-foreground font-semibold capitalize">
+                "{deleteTargetItem?.customerName}"
+              </strong>
+              ? Data yang dihapus tidak dapat dikembalikan.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0 pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDeleteTargetItem(null)}
+              disabled={isDeleting}
+            >
+              Batal
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Menghapus..." : "Hapus Express"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
